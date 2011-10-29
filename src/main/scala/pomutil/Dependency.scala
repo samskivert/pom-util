@@ -13,10 +13,10 @@ case class Dependency (
   groupId :String,
   artifactId :String,
   version :String,
-  `type` :String,
-  classifier :Option[String],
-  scope :String,
-  optional :Boolean
+  `type` :String = Dependency.DefaultType,
+  classifier :Option[String] = None,
+  scope :String = Dependency.DefaultScope,
+  optional :Boolean = false
 ) {
   /** Returns the path to this artifact, relative to the Maven repo root. */
   def repositoryPath :Seq[String] = groupId.split("\\.") ++ Seq(artifactId, version)
@@ -51,11 +51,6 @@ object Dependency {
 
   /** The default `scope` for a dependency: `compile`. */
   val DefaultScope = "compile"
-
-  /** Creates a dependency, using defaults where desired. */
-  def apply (groupId :String, artifactId :String, version :String, `type` :String = DefaultType,
-             classifier :Option[String] = None, scope :String = DefaultScope) :Dependency =
-    new Dependency(groupId, artifactId, version, `type`, classifier, scope, false)
 
   /** Parses a dependency from the supplied XML. */
   def fromXML (node :Node) = Dependency(
