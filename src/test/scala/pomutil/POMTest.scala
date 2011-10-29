@@ -29,6 +29,21 @@ class POMTest
 
       <name>samskivert</name>
       <url>http://github.com/samskivert/samskivert</url>
+
+      <dependencies>
+        <dependency>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
+          <version>2.5</version>
+          <scope>provided</scope>
+        </dependency>
+        <dependency>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+          <version>1.2.16</version>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
     </project>
 
   val mavenCore =
@@ -49,6 +64,8 @@ class POMTest
     assertEquals(Some("samskivert"), pom.name)
     assertEquals(None, pom.description)
     assertEquals(Some("http://github.com/samskivert/samskivert"), pom.url)
+    assertEquals(Seq(Dependency("javax.servlet", "servlet-api", "2.5", scope="provided"),
+                     Dependency("log4j", "log4j", "1.2.16", optional=true)), pom.depends)
   }
 
   @Test def testFromFile () {

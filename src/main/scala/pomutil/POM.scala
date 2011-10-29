@@ -64,6 +64,7 @@ object POM {
           None
         }
       } yield pom
+
       Some(POM(
         parent,
         text(elem, "modelVersion") getOrElse("4.0.0"),
@@ -74,7 +75,7 @@ object POM {
         text(elem, "name"),
         text(elem, "description"),
         text(elem, "url"),
-        (elem \ "dependencies") map(Dependency.fromXML),
+        (elem \ "dependencies" \ "dependency") map(Dependency.fromXML),
         errors.toSeq))
     case _ => None
   }
