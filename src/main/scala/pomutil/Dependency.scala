@@ -1,5 +1,6 @@
 //
-// $Id$
+// pom-util - a Scala library for reading Maven POM files
+// http://github.com/samskivert/pom-util/blob/master/LICENSE
 
 package pomutil
 
