@@ -21,7 +21,8 @@ said dependencies in the local Maven repository if desired:
 ## License
 
 pom-util is released under the New BSD License, which can be found in the
-`LICENSE` file.
+[LICENSE] file.
 
 [POM]: https://github.com/samskivert/pom-util/blob/master/src/main/scala/pomutil/POM.scala
 [Dependency]: https://github.com/samskivert/pom-util/blob/master/src/main/scala/pomutil/Dependency.scala
+[LICENSE]: https://github.com/samskivert/pom-util/blob/master/LICENSE
