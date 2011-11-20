@@ -59,6 +59,20 @@ class POMTest
       <version>2.2.1</version>
     </dependency>
 
+  val metaPom =
+    <project>
+      <groupId>com.samskivert</groupId>
+      <artifactId>metaproject</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <packaging>pom</packaging>
+
+      <modules>
+        <module>sub1</module>
+        <module>sub2</module>
+        <module>sub3</module>
+      </modules>
+    </project>
+
   @Test def testFromXML () {
     val pom = fromXML(samskivert, None).get
     assertEquals(Some(Dependency("org.sonatype.oss", "oss-parent", "7", "pom")),
@@ -76,6 +90,10 @@ class POMTest
     // check that we can read a property defined in our parent POM
     assertEquals(Some("https://oss.sonatype.org/content/repositories/snapshots/"),
                  pom.getAttr("sonatypeOssDistMgmtSnapshotsUrl"))
+
+    // test modules parsing
+    val mpom = fromXML(metaPom, None).get
+    assertEquals(Seq("sub1", "sub2", "sub3"), mpom.modules)
   }
 
   @Test def testFromFile () {

@@ -33,9 +33,10 @@ class POM (
 
   lazy val properties :Map[String,String] =
     (elem \ "properties" \ "_") map(n => (n.label.trim, n.text.trim)) toMap
-
   lazy val depends :Seq[Dependency] =
     (elem \ "dependencies" \ "dependency") map(Dependency.fromXML(_pfunc))
+  lazy val modules :Seq[String] =
+    (elem \ "modules" \\ "module") map(_.text.trim)
 
   // TODO: other bits
 
