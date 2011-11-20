@@ -73,6 +73,9 @@ class POMTest
     assertEquals(Map("foo" -> "bar", "servlet.version" -> "2.5"), pom.properties)
     assertEquals(Seq(Dependency("javax.servlet", "servlet-api", "2.5", scope="provided"),
                      Dependency("log4j", "log4j", "1.2.16", optional=true)), pom.depends)
+    // check that we can read a property defined in our parent POM
+    assertEquals(Some("https://oss.sonatype.org/content/repositories/snapshots/"),
+                 pom.getAttr("sonatypeOssDistMgmtSnapshotsUrl"))
   }
 
   @Test def testFromFile () {

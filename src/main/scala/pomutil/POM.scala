@@ -5,33 +5,46 @@
 package pomutil
 
 import java.io.File
+import java.util.regex.Pattern
+
 import scala.collection.mutable.ArrayBuffer
 import scala.xml.{XML, Node}
 
 /**
  * Project metadata.
  */
-case class POM (
-  parent :Option[POM],
-  modelVersion :String,
+class POM (
+  val parent :Option[POM],
+  val parentDep :Option[Dependency],
+  elem :Node
+) {
+  import POM._
 
-  groupId :String,
-  artifactId :String,
-  version :String,
-  packaging :String,
+  lazy val modelVersion :String = attr("modelVersion") getOrElse("4.0.0")
 
-  name :Option[String],
-  description :Option[String],
-  url :Option[String],
+  lazy val groupId :String = attr("groupId") orElse(parent map(_.groupId)) getOrElse("missing")
+  lazy val artifactId :String = attr("artifactId") getOrElse("missing")
+  lazy val version :String = attr("version") orElse(parent map(_.version)) getOrElse("missing")
+  lazy val packaging :String = attr("packaging") orElse(parent map(_.packaging)) getOrElse("missing")
 
-  properties :Map[String,String],
+  lazy val name :Option[String] = attr("name")
+  lazy val description :Option[String] = attr("description")
+  lazy val url :Option[String] = attr("url")
 
-  depends :Seq[Dependency],
+  lazy val properties :Map[String,String] =
+    (elem \ "properties" \ "_") map(n => (n.label.trim, n.text.trim)) toMap
+
+  lazy val depends :Seq[Dependency] =
+    (elem \ "dependencies" \ "dependency") map(Dependency.fromXML(_pfunc))
+
   // TODO: other bits
 
-  /** Any errors encountered when parsing this POM. */
-  errors :Seq[String]
-) {
+  /** Looks up a POM attribute, which may include properties defined in the POM as well as basic
+   * project attributes like `project.version`, etc. */
+  def getAttr (name :String) :Option[String] =
+    // TODO: support env.x and Java system properties?
+    getProjectAttr(name) orElse properties.get(name) orElse parent.flatMap(_.properties.get(name))
+
   /** Returns a dependency on the (optionally classified) artifact described by this POM. */
   def toDependency (classifier :Option[String] = None,
                     scope :String = Dependency.DefaultScope,
@@ -43,6 +56,37 @@ case class POM (
 
   override def toString = groupId + ":" + artifactId + ":" + version +
     parent.map(p => "\n  (p: " + p + ")").getOrElse("")
+
+  private def getProjectAttr (key :String) :Option[String] =
+    if (!key.startsWith("project.")) None else key.substring(8) match {
+      case "groupId" => Some(groupId)
+      case "artifactId" => Some(artifactId)
+      case "version" => Some(version)
+      case "packaging" => Some(packaging)
+      case "name" => name
+      case "description" => description
+      case "url" => url
+      case pkey if (pkey.startsWith("parent.")) => pkey.substring(7) match {
+        case "groupId" => parentDep.map(_.groupId)
+        case "artifactId" => parentDep.map(_.artifactId)
+        case "version" => parentDep.map(_.version)
+        case _ => None
+      }
+      case _ => None
+    }
+
+  private def attr (name :String) = XMLUtil.text(elem, name) map(_pfunc)
+
+  private lazy val _pfunc = (text :String) => {
+    val m = PropRe.matcher(text)
+    val sb = new StringBuffer
+    while (m.find()) {
+      val name = m.group(1)
+      m.appendReplacement(sb, getAttr(name).getOrElse("\\$!{" + name + "}"))
+    }
+    m.appendTail(sb)
+    sb.toString
+  }
 }
 
 object POM {
@@ -54,36 +98,18 @@ object POM {
   /** Parses a POM from the supplied XML. */
   def fromXML (node :Node, file :Option[File]) :Option[POM] = node match {
     case elem if (elem.label == "project") => {
-      val errors = ArrayBuffer[String]()
       val parentDep = (elem \ "parent").headOption map(Dependency.fromXML) map(_.copy(`type` = "pom"))
       val parent = try {
         localParent(file, parentDep) orElse installedParent(parentDep)
       } catch {
         case e => println("Failed to read parent pom (" + parentDep + "): " + e.getMessage) ; None
       }
-
-      val props = (elem \ "properties" \ "_") map(toPropTuple) toMap
-      val allProps = parent.map(_.properties ++ props) getOrElse(props)
-      val pfunc = mkPropFunc(allProps)
-
-      Some(POM(
-        parent,
-        text(elem, "modelVersion") map(pfunc) getOrElse("4.0.0"),
-        text(elem, "groupId") map(pfunc) getOrElse(parent map(_.groupId) getOrElse("missing")),
-        text(elem, "artifactId") map(pfunc) getOrElse("missing"),
-        text(elem, "version") map(pfunc) getOrElse(parent map(_.version) getOrElse("missing")),
-        text(elem, "packaging") map(pfunc) getOrElse(parent map(_.packaging) getOrElse("missing")),
-        text(elem, "name") map(pfunc),
-        text(elem, "description") map(pfunc),
-        text(elem, "url") map(pfunc),
-        props,
-        (elem \ "dependencies" \ "dependency") map(Dependency.fromXML(pfunc)),
-        errors.toSeq))
+      Some(new POM(parent, parentDep, elem))
     }
     case _ => None
   }
 
-  protected def localParent (file :Option[File], parentDep :Option[Dependency]) = for {
+  private def localParent (file :Option[File], parentDep :Option[Dependency]) = for {
     pdep <- parentDep
     pomFile <- file
     pomDir <- Option(pomFile.getParentFile)
@@ -94,11 +120,11 @@ object POM {
     if (pom.toDependency() == pdep)
   } yield pom
 
-  protected def installedParent (parentDep :Option[Dependency]) = for {
+  private def installedParent (parentDep :Option[Dependency]) = for {
     pdep <- parentDep
     pfile <- pdep.localPOM
     pom <- fromFile(pfile)
   } yield pom
 
-  protected def toPropTuple (node :Node) = (node.label.trim, node.text.trim)
+  private val PropRe = Pattern.compile("\\$\\{([^}]+)\\}")
 }
