@@ -31,11 +31,16 @@ class POMTest
       <name>samskivert</name>
       <url>http://github.com/samskivert/samskivert</url>
 
+      <properties>
+        <foo>bar</foo>
+        <servlet.version>2.5</servlet.version>
+      </properties>
+
       <dependencies>
         <dependency>
           <groupId>javax.servlet</groupId>
           <artifactId>servlet-api</artifactId>
-          <version>2.5</version>
+          <version>${{servlet.version}}</version>
           <scope>provided</scope>
         </dependency>
         <dependency>
@@ -55,7 +60,7 @@ class POMTest
     </dependency>
 
   @Test def testFromXML () {
-    val pom = fromXML(samskivert).get
+    val pom = fromXML(samskivert, None).get
     assertEquals(Some(Dependency("org.sonatype.oss", "oss-parent", "7", "pom")),
                  pom.parent.map(_.toDependency()))
     assertEquals("com.samskivert", pom.groupId)
@@ -65,12 +70,13 @@ class POMTest
     assertEquals(Some("samskivert"), pom.name)
     assertEquals(None, pom.description)
     assertEquals(Some("http://github.com/samskivert/samskivert"), pom.url)
+    assertEquals(Map("foo" -> "bar", "servlet.version" -> "2.5"), pom.properties)
     assertEquals(Seq(Dependency("javax.servlet", "servlet-api", "2.5", scope="provided"),
                      Dependency("log4j", "log4j", "1.2.16", optional=true)), pom.depends)
   }
 
   @Test def testFromFile () {
-    val pom = Dependency.fromXML(mavenCore).localPOM.flatMap(f => fromFile(f)).get
+    val pom = Dependency.fromXML(mavenCore).localPOM.flatMap(fromFile).get
     assertEquals(Some(Dependency(pom.groupId, "maven", pom.version, "pom")),
                  pom.parent.map(_.toDependency()))
     assertEquals("org.apache.maven", pom.groupId)

@@ -53,15 +53,19 @@ object Dependency {
   /** The default `scope` for a dependency: `compile`. */
   val DefaultScope = "compile"
 
-  /** Parses a dependency from the supplied XML. */
-  def fromXML (node :Node) = Dependency(
-    text(node, "groupId") getOrElse("missing"),
-    text(node, "artifactId") getOrElse("missing"),
-    text(node, "version") getOrElse("missing"),
-    text(node, "type") getOrElse(DefaultType),
-    text(node, "classifier"),
-    text(node, "scope") getOrElse(DefaultScope),
-    text(node, "optional") map(_.equalsIgnoreCase("true")) getOrElse(false))
+  /** Parses a dependency from the supplied XML, using the supplied property substitution function
+   * to handle property replacement. */
+  def fromXML (pfunc :(String => String))(node :Node) :Dependency = Dependency(
+    text(node, "groupId") map(pfunc) getOrElse("missing"),
+    text(node, "artifactId") map(pfunc) getOrElse("missing"),
+    text(node, "version") map(pfunc) getOrElse("missing"),
+    text(node, "type") map(pfunc) getOrElse(DefaultType),
+    text(node, "classifier") map(pfunc),
+    text(node, "scope") map(pfunc) getOrElse(DefaultScope),
+    text(node, "optional") map(pfunc) map(_.equalsIgnoreCase("true")) getOrElse(false))
+
+  /** Parses a dependency from the supplied XML, doing no property substitution. */
+  def fromXML (node :Node) :Dependency = fromXML(ident)(node)
 
   private def optRepoFile (segs :String*) = fileToOpt(file(m2repo, segs :_*))
 
@@ -72,4 +76,5 @@ object Dependency {
   private val home = new File(System.getProperty("user.home"))
   private val m2 = new File(home, ".m2")
   private val m2repo = new File(m2, "repository")
+  private val ident = (text :String) => text
 }
