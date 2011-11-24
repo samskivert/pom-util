@@ -19,6 +19,9 @@ case class Dependency (
   scope :String = Dependency.DefaultScope,
   optional :Boolean = false
 ) {
+  /** Returns an identifier that encompases the group, artifact and version. */
+  def id = groupId + ":" + artifactId + ":" + version
+
   /** Returns the path to this artifact, relative to the Maven repo root. */
   def repositoryPath :Seq[String] = groupId.split("\\.") ++ Seq(artifactId, version)
 

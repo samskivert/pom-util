@@ -38,6 +38,9 @@ class POM (
   lazy val modules :Seq[String] =
     (elem \ "modules" \\ "module") map(_.text.trim)
 
+  /** Returns an identifier that encompases the group, artifact and version. */
+  def id = groupId + ":" + artifactId + ":" + version
+
   // TODO: other bits
 
   /** Looks up a POM attribute, which may include properties defined in the POM as well as basic
