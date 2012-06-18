@@ -34,12 +34,17 @@ class POM (
   lazy val properties :Map[String,String] =
     (elem \ "properties" \ "_") map(n => (n.label.trim, n.text.trim)) toMap
   lazy val depends :Seq[Dependency] =
-    (elem \ "dependencies" \ "dependency") map(Dependency.fromXML(_pfunc))
+    (elem \ "dependencies" \ "dependency") map(Dependency.fromXML(subProps))
   lazy val modules :Seq[String] =
     (elem \ "modules" \\ "module") map(_.text.trim)
+  lazy val profiles :Seq[Profile] =
+    (elem \ "profiles" \\ "profile") map(new Profile(this, _))
 
   /** Returns an identifier that encompases the group, artifact and version. */
   def id = groupId + ":" + artifactId + ":" + version
+
+  /** Returns all modules defined in the main POM and in all profiles. */
+  def allModules = modules ++ profiles.flatMap(_.modules)
 
   // TODO: other bits
 
@@ -47,7 +52,7 @@ class POM (
    * project attributes like `project.version`, etc. */
   def getAttr (name :String) :Option[String] =
     // TODO: support env.x and Java system properties?
-    getProjectAttr(name) orElse properties.get(name) orElse parent.flatMap(_.properties.get(name))
+    getProjectAttr(name) orElse properties.get(name) orElse parent.flatMap(_.getAttr(name))
 
   /** Returns a dependency on the (optionally classified) artifact described by this POM. */
   def toDependency (classifier :Option[String] = None,
@@ -57,6 +62,21 @@ class POM (
 
   /** Returns true if this POM declares a snapshot artifact, false otherwise. */
   def isSnapshot = version.endsWith("-SNAPSHOT")
+
+  /** Extracts the text of an attribute from the supplied element and substitutes properties. */
+  def attr (elem :Node, name :String) :Option[String] = XMLUtil.text(elem, name) map(subProps)
+
+  /** A function that substitutes this POM's properties into the supplied text. */
+  val subProps = (text :String) => {
+    val m = PropRe.matcher(text)
+    val sb = new StringBuffer
+    while (m.find()) {
+      val name = m.group(1)
+      m.appendReplacement(sb, getAttr(name).getOrElse("\\$!{" + name + "}"))
+    }
+    m.appendTail(sb)
+    sb.toString
+  }
 
   override def toString = groupId + ":" + artifactId + ":" + version +
     parent.map(p => "\n  (p: " + p + ")").getOrElse("")
@@ -79,18 +99,7 @@ class POM (
       case _ => None
     }
 
-  private def attr (name :String) = XMLUtil.text(elem, name) map(_pfunc)
-
-  private lazy val _pfunc = (text :String) => {
-    val m = PropRe.matcher(text)
-    val sb = new StringBuffer
-    while (m.find()) {
-      val name = m.group(1)
-      m.appendReplacement(sb, getAttr(name).getOrElse("\\$!{" + name + "}"))
-    }
-    m.appendTail(sb)
-    sb.toString
-  }
+  private def attr (name :String) :Option[String] = attr(elem, name)
 }
 
 object POM {
@@ -102,7 +111,8 @@ object POM {
   /** Parses a POM from the supplied XML. */
   def fromXML (node :Node, file :Option[File]) :Option[POM] = node match {
     case elem if (elem.label == "project") => {
-      val parentDep = (elem \ "parent").headOption map(Dependency.fromXML) map(_.copy(`type` = "pom"))
+      val parentDep = (elem \ "parent").headOption map(Dependency.fromXML) map(
+        _.copy(`type` = "pom"))
       val parent = try {
         localParent(file, parentDep) orElse installedParent(parentDep)
       } catch {

@@ -73,6 +73,29 @@ class POMTest
       </modules>
     </project>
 
+  val profiled =
+    <project>
+      <groupId>com.test</groupId>
+      <artifactId>profiled</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <packaging>jar</packaging>
+
+      <modules>
+        <module>core</module>
+      </modules>
+
+      <profiles>
+        <profile>
+          <id>java</id>
+          <modules><module>java</module></modules>
+        </profile>
+        <profile>
+          <id>android</id>
+          <modules><module>android</module></modules>
+        </profile>
+      </profiles>
+    </project>
+
   @Test def testFromXML () {
     val pom = fromXML(samskivert, None).get
     assertEquals(Some(Dependency("org.sonatype.oss", "oss-parent", "7", "pom")),
@@ -107,5 +130,12 @@ class POMTest
     assertEquals(Some("Maven Core"), pom.name)
     assertEquals(None, pom.description)
     assertEquals(None, pom.url)
+  }
+
+  @Test def testProfiles () {
+    val pom = fromXML(profiled, None).get
+    assertEquals(pom.profiles.map(_.id), Seq("java", "android"))
+    assertEquals(pom.profiles.map(_.modules), Seq(Seq("java"), Seq("android")))
+    assertEquals(pom.allModules, Seq("core", "java", "android"))
   }
 }
