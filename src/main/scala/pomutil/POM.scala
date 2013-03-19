@@ -79,7 +79,7 @@ class POM (
   }
 
   override def toString = groupId + ":" + artifactId + ":" + version +
-    parent.map(p => "\n  (p: " + p + ")").getOrElse("")
+    parent.map(p => " <- " + p).getOrElse("")
 
   private def getProjectAttr (key :String) :Option[String] =
     if (!key.startsWith("project.")) None else key.substring(8) match {
@@ -116,7 +116,12 @@ object POM {
       val parent = try {
         localParent(file, parentDep) orElse installedParent(parentDep)
       } catch {
-        case e => println("Failed to read parent pom (" + parentDep + "): " + e.getMessage) ; None
+        case e :Throwable =>
+          warn("Failed to read parent pom (" + parentDep + "): " + e.getMessage) ; None
+      }
+      // if we have a parent dep but were unable to find the parent POM, issue a warning
+      if (parentDep.isDefined && !parent.isDefined) {
+        warn(text(elem, "artifactId").getOrElse("unknown") + " missing parent: " + parentDep.get.id)
       }
       Some(new POM(parent, parentDep, elem))
     }
@@ -128,7 +133,7 @@ object POM {
     pomFile <- file
     pomDir <- Option(pomFile.getParentFile)
     parentDir <- Option(pomDir.getParentFile)
-    val parentFile = new File(parentDir, "pom.xml")
+    parentFile = new File(parentDir, "pom.xml")
     if (parentFile.exists)
     pom <- fromFile(parentFile)
     if (pom.toDependency() == pdep)
@@ -139,6 +144,10 @@ object POM {
     pfile <- pdep.localPOM
     pom <- fromFile(pfile)
   } yield pom
+
+  private def warn (msg :String) {
+    Console.err.println("!!! " + msg)
+  }
 
   private val PropRe = Pattern.compile("\\$\\{([^}]+)\\}")
 }
