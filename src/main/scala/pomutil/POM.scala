@@ -7,12 +7,12 @@ package pomutil
 import java.io.File
 import java.util.regex.Pattern
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, Set => MSet}
 import scala.xml.{XML, Node}
 
 /**
- * Project metadata.
- */
+  * Project metadata.
+  */
 class POM (
   val parent :Option[POM],
   val parentDep :Option[Dependency],
@@ -49,7 +49,7 @@ class POM (
   // TODO: other bits
 
   /** Looks up a POM attribute, which may include properties defined in the POM as well as basic
-   * project attributes like `project.version`, etc. */
+    * project attributes like `project.version`, etc. */
   def getAttr (name :String) :Option[String] =
     // TODO: support env.x and Java system properties?
     getProjectAttr(name) orElse properties.get(name) orElse parent.flatMap(_.getAttr(name))
@@ -66,6 +66,45 @@ class POM (
   /** Extracts the text of an attribute from the supplied element and substitutes properties. */
   def attr (elem :Node, name :String) :Option[String] = XMLUtil.text(elem, name) map(subProps)
 
+  /** Computes this POM's transitive dependencies. Exclusions are honored, and conflicts are resolved
+    * using the standard "distance from root POM" Maven semantics. Direct dependencies with scopes
+    * other than `compile` and `test` are included for this project, but not transitively, also per
+    * standard Maven semantics.
+    *
+    * @param forTest whether to include test dependencies.
+    */
+  def transitiveDepends (forTest :Boolean) :Seq[Dependency] = {
+    val haveDeps = MSet[(String,String)]()
+    val allDeps = ArrayBuffer[Dependency]()
+    def key (d :Dependency) = (d.groupId, d.artifactId)
+
+    // we expand our dependency tree one "layer" at a time; we start with the depends at distance
+    // one from the project (its direct dependencies), then we compute all of the direct
+    // dependencies of those depends (distance two) and filter out any that are already satisfied
+    // (this enforces the "closest to the root POM" conflict resolution strategy), then we repeat
+    // the process, expanding to distance three and so forth, until we discover no new depends
+
+    // TODO: handle exclusions
+
+    def extract (deps :Seq[Dependency], mapper :(Dependency => Dependency)) {
+      haveDeps ++= (deps map key)
+      allDeps ++= deps
+      val newdeps = for { dep <- deps
+                          pom <- dep.localPOM.flatMap(fromFile).toSeq
+                          dd <- pom.depends
+                          if (dd.scope == "compile" && !dd.optional && !haveDeps(key(dd)))
+                        } yield mapper(dd)
+      // we might encounter the same dep from two parents, so we .distinct to consolidate
+      if (!newdeps.isEmpty) extract(newdeps.distinct, mapper)
+    }
+
+    val (compDeps, testDeps) = depends partition(_.scope != "test")
+    extract(compDeps, d => d)
+    if (forTest) extract(testDeps, _.copy(scope="test"))
+
+    allDeps.toSeq
+  }
+
   /** A function that substitutes this POM's properties into the supplied text. */
   val subProps = (text :String) => {
     val m = PropRe.matcher(text)
@@ -78,8 +117,8 @@ class POM (
     sb.toString
   }
 
-  override def toString = groupId + ":" + artifactId + ":" + version +
-    parent.map(p => " <- " + p).getOrElse("")
+  override def toString = groupId + ":" + artifactId + ":" + version + parent.map(
+    " <- " + _).getOrElse("")
 
   private def getProjectAttr (key :String) :Option[String] =
     if (!key.startsWith("project.")) None else key.substring(8) match {

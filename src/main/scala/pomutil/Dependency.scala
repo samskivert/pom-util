@@ -71,13 +71,9 @@ object Dependency {
   def fromXML (node :Node) :Dependency = fromXML(ident)(node)
 
   private def optRepoFile (segs :String*) = fileToOpt(file(m2repo, segs :_*))
-
   private def fileToOpt (file :File) = if (file.exists) Some(file) else None
+  private def file (root :File, segs :String*) = (root /: segs)(new File(_, _))
 
-  private def file (root :File, segs :String*) = (root /: segs) ((f, s) => new File(f, s))
-
-  private val home = new File(System.getProperty("user.home"))
-  private val m2 = new File(home, ".m2")
-  private val m2repo = new File(m2, "repository")
+  private val m2repo = file(new File(System.getProperty("user.home")), ".m2", "repository")
   private val ident = (text :String) => text
 }

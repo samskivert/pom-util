@@ -138,4 +138,57 @@ class POMTest
     assertEquals(pom.profiles.map(_.modules), Seq(Seq("java"), Seq("android")))
     assertEquals(pom.allModules, Seq("core", "java", "android"))
   }
+
+  @Test def testTransDeps () {
+    def ids (d :Dependency) = d.id + ":" + d.scope
+
+    val samdep = Dependency("com.samskivert", "samskivert", "1.6")
+    samdep.localPOM.flatMap(POM.fromFile) foreach { pom =>
+      // pom.transitiveDepends(false).map(ids) foreach println
+      assertEquals(Seq("javax.servlet:servlet-api:2.5:provided",
+                       "log4j:log4j:1.2.16:compile",
+                       "javax.mail:mail:1.4.1:compile",
+                       "org.apache.velocity:velocity:1.6.4:compile",
+                       "commons-digester:commons-digester:2.0:compile",
+                       "javax.activation:activation:1.1:compile",
+                       "commons-collections:commons-collections:3.2.1:compile",
+                       "commons-lang:commons-lang:2.4:compile",
+                       "oro:oro:2.0.8:compile",
+                       "commons-beanutils:commons-beanutils:1.8.0:compile",
+                       "commons-logging:commons-logging:1.1.1:compile"),
+                   pom.transitiveDepends(false).map(ids))
+      // pom.transitiveDepends(true).map(ids) foreach println
+      assertEquals(Seq("javax.servlet:servlet-api:2.5:provided",
+                       "log4j:log4j:1.2.16:compile",
+                       "javax.mail:mail:1.4.1:compile",
+                       "org.apache.velocity:velocity:1.6.4:compile",
+                       "commons-digester:commons-digester:2.0:compile",
+                       "javax.activation:activation:1.1:compile",
+                       "commons-collections:commons-collections:3.2.1:compile",
+                       "commons-lang:commons-lang:2.4:compile",
+                       "oro:oro:2.0.8:compile",
+                       "commons-beanutils:commons-beanutils:1.8.0:compile",
+                       "commons-logging:commons-logging:1.1.1:compile",
+                       "junit:junit:4.10:test",
+                       "org.hsqldb:hsqldb:2.2.4:test",
+                       "org.hamcrest:hamcrest-core:1.1:test"),
+                   pom.transitiveDepends(true).map(ids))
+
+    }
+
+    val jettydep = Dependency("org.eclipse.jetty", "jetty-servlet", "9.0.0.RC2")
+    jettydep.localPOM.flatMap(POM.fromFile) foreach { pom =>
+      assertEquals(Seq("org.eclipse.jetty:jetty-security:9.0.0.RC2:compile",
+                       "org.eclipse.jetty:jetty-jmx:9.0.0.RC2:compile",
+                       "org.eclipse.jetty:jetty-server:9.0.0.RC2:compile",
+                       // TODO: missing is because we need to inherit version of depend from parent
+                       // pom if it's not specified... whee!
+                       "org.eclipse.jetty.orbit:javax.servlet:missing:compile",
+                       "org.eclipse.jetty:jetty-http:9.0.0.RC2:compile",
+                       "org.eclipse.jetty:jetty-io:9.0.0.RC2:compile",
+                       // this depend comes in twice from two parents, but should only appear once
+                       "org.eclipse.jetty:jetty-util:9.0.0.RC2:compile"),
+                   pom.transitiveDepends(false).map(ids))
+    }
+  }
 }
