@@ -33,12 +33,16 @@ class POM (
 
   lazy val properties :Map[String,String] =
     (elem \ "properties" \ "_") map(n => (n.label.trim, n.text.trim)) toMap
-  lazy val depends :Seq[Dependency] =
-    (elem \ "dependencies" \ "dependency") map(Dependency.fromXML(subProps))
   lazy val modules :Seq[String] =
     (elem \ "modules" \\ "module") map(_.text.trim)
   lazy val profiles :Seq[Profile] =
     (elem \ "profiles" \\ "profile") map(new Profile(this, _))
+
+  lazy val depends :Seq[Dependency] = manageDepends(
+    (elem \ "dependencies" \ "dependency") map(Dependency.fromXML(subProps)))
+  lazy val dependMgmt :Map[String,Dependency] =
+    (elem \ "dependencyManagement" \ "dependencies" \ "dependency") map(
+      Dependency.fromXML(subProps)) map(d => (d.mgmtKey, d)) toMap
 
   /** Returns an identifier that encompases the group, artifact and version. */
   def id = groupId + ":" + artifactId + ":" + version
@@ -137,6 +141,15 @@ class POM (
       }
       case _ => None
     }
+
+  // replaces any depends with "canonical" version from depmgmt section
+  private def manageDepends (depends :Seq[Dependency]) :Seq[Dependency] = {
+    val managed = depends map(d => dependMgmt.get(d.mgmtKey) match {
+      case Some(md) => md.copy(scope = d.scope, optional = d.optional)
+      case None     => d
+    })
+    (parent :\ managed)(_ manageDepends _)
+  }
 
   private def attr (name :String) :Option[String] = attr(elem, name)
 }

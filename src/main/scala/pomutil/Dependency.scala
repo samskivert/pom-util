@@ -22,12 +22,15 @@ case class Dependency (
   /** Returns an identifier that encompases the group, artifact and version. */
   def id = groupId + ":" + artifactId + ":" + version
 
+  /** Returns the key used to correlate this dependency with those specified in a
+    * `dependencyManagement` section of this or a parent POM. */
+  def mgmtKey = groupId + ":" + artifactId + ":" + `type` + optClassifier(":")
+
   /** Returns the path to this artifact, relative to the Maven repo root. */
   def repositoryPath :Seq[String] = groupId.split("\\.") ++ Seq(artifactId, version)
 
   /** Returns the name of the artifact described by this dependency. */
-  def artifactName :String =
-    artifactId + "-" + version + classifier.map("-" + _).getOrElse("") + "." + `type`
+  def artifactName :String = artifactId + "-" + version + optClassifier("-") + "." + `type`
 
   /** Returns the name of the POM that describes this dependency. */
   def pomName = artifactId + "-" + version + ".pom"
@@ -42,6 +45,11 @@ case class Dependency (
   /** Locates the specified dependency in the user's local Maven repository and returns the
    * artifact file, if it exists. */
   def localArtifact :Option[File] = Dependency.optRepoFile(repositoryPath :+ artifactName :_*)
+
+  private def optClassifier (pre :String) = classifier match {
+    case None => ""
+    case Some(c) => pre + c
+  }
 }
 
 /**

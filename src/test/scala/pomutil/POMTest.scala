@@ -178,12 +178,11 @@ class POMTest
 
     val jettydep = Dependency("org.eclipse.jetty", "jetty-servlet", "9.0.0.RC2")
     jettydep.localPOM.flatMap(POM.fromFile) foreach { pom =>
+      // pom.transitiveDepends(false).map(ids) foreach println
       assertEquals(Seq("org.eclipse.jetty:jetty-security:9.0.0.RC2:compile",
                        "org.eclipse.jetty:jetty-jmx:9.0.0.RC2:compile",
                        "org.eclipse.jetty:jetty-server:9.0.0.RC2:compile",
-                       // TODO: missing is because we need to inherit version of depend from parent
-                       // pom if it's not specified... whee!
-                       "org.eclipse.jetty.orbit:javax.servlet:missing:compile",
+                       "org.eclipse.jetty.orbit:javax.servlet:3.0.0.v201112011016:compile",
                        "org.eclipse.jetty:jetty-http:9.0.0.RC2:compile",
                        "org.eclipse.jetty:jetty-io:9.0.0.RC2:compile",
                        // this depend comes in twice from two parents, but should only appear once
