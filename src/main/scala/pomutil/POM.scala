@@ -42,6 +42,11 @@ class POM (
     (elem \ "dependencyManagement" \ "dependencies" \ "dependency") map(
       Dependency.fromXML(subProps)) map(d => (d.mgmtKey, d)) toMap
 
+  /** Build properties like `sourceDirectory` and other simple stuff. */
+  lazy val buildProps :Map[String,String] =
+    (elem \ "build" \ "_") filter(n => knownBuildProps(n.label.trim)) map(
+      n => (n.label.trim, n.text.trim)) toMap // TODO: extract deeper stuffs
+
   /** Returns an identifier that encompases the group, artifact and version. */
   def id = groupId + ":" + artifactId + ":" + version
 
@@ -180,6 +185,8 @@ object POM {
     }
     case _ => None
   }
+
+  private val knownBuildProps = Set("sourceDirectory", "testSourceDirectory")
 
   private def localParent (file :Option[File], parentDep :Option[Dependency]) = for {
     pdep <- parentDep

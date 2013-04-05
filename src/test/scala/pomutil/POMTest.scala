@@ -96,6 +96,40 @@ class POMTest
       </profiles>
     </project>
 
+  val buildPropped =
+    <project>
+      <groupId>com.test</groupId>
+      <artifactId>build-propped</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <packaging>jar</packaging>
+
+      <build>
+        <sourceDirectory>src</sourceDirectory>
+        <testSourceDirectory>tests</testSourceDirectory>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+         </plugin>
+        </plugins>
+
+        <testResources>
+          <testResource>
+            <directory>tests</directory>
+          </testResource>
+        </testResources>
+      </build>
+    </project>
+
   @Test def testFromXML () {
     val pom = fromXML(samskivert, None).get
     assertEquals(Some(Dependency("org.sonatype.oss", "oss-parent", "7", "pom")),
@@ -137,6 +171,12 @@ class POMTest
     assertEquals(pom.profiles.map(_.id), Seq("java", "android"))
     assertEquals(pom.profiles.map(_.modules), Seq(Seq("java"), Seq("android")))
     assertEquals(pom.allModules, Seq("core", "java", "android"))
+  }
+
+  @Test def testBuildProps () {
+    val pom = fromXML(buildPropped, None).get
+    assertEquals("src", pom.buildProps("sourceDirectory"))
+    assertEquals("tests", pom.buildProps("testSourceDirectory"))
   }
 
   @Test def testTransDeps () {
