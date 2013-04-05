@@ -22,21 +22,19 @@ class POM (
 
   lazy val modelVersion :String = attr("modelVersion") getOrElse("4.0.0")
 
-  lazy val groupId :String = attr("groupId") orElse(parent map(_.groupId)) getOrElse("missing")
+  lazy val groupId    :String = iattr("groupId", _.groupId)
   lazy val artifactId :String = attr("artifactId") getOrElse("missing")
-  lazy val version :String = attr("version") orElse(parent map(_.version)) getOrElse("missing")
-  lazy val packaging :String = attr("packaging") orElse(parent map(_.packaging)) getOrElse("missing")
+  lazy val version    :String = iattr("version", _.version)
+  lazy val packaging  :String = iattr("packaging", _.packaging)
 
-  lazy val name :Option[String] = attr("name")
+  lazy val name        :Option[String] = attr("name")
   lazy val description :Option[String] = attr("description")
-  lazy val url :Option[String] = attr("url")
+  lazy val url         :Option[String] = attr("url")
 
+  lazy val modules    :Seq[String]  = (elem \ "modules" \\ "module") map(_.text.trim)
+  lazy val profiles   :Seq[Profile] = (elem \ "profiles" \\ "profile") map(new Profile(this, _))
   lazy val properties :Map[String,String] =
     (elem \ "properties" \ "_") map(n => (n.label.trim, n.text.trim)) toMap
-  lazy val modules :Seq[String] =
-    (elem \ "modules" \\ "module") map(_.text.trim)
-  lazy val profiles :Seq[Profile] =
-    (elem \ "profiles" \\ "profile") map(new Profile(this, _))
 
   lazy val depends :Seq[Dependency] = manageDepends(
     (elem \ "dependencies" \ "dependency") map(Dependency.fromXML(subProps)))
@@ -123,6 +121,9 @@ class POM (
 
   override def toString = groupId + ":" + artifactId + ":" + version + parent.map(
     " <- " + _).getOrElse("")
+
+  private def iattr (name :String, pfunc :POM => String) =
+    attr(name) orElse(parent map pfunc) getOrElse("missing")
 
   private def getProjectAttr (key :String) :Option[String] =
     if (!key.startsWith("project.")) None else key.substring(8) match {
