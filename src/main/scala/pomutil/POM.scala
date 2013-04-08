@@ -169,10 +169,14 @@ object POM {
   /** Parses a POM from the supplied XML. */
   def fromXML (node :Node, file :Option[File]) :Option[POM] = node match {
     case elem if (elem.label == "project") => {
+      // TODO: handle relativepath
       val parentDep = (elem \ "parent").headOption map(Dependency.fromXML) map(
         _.copy(`type` = "pom"))
+      val parentPath = (elem \ "parent" \ "relativePath").headOption map(_.text.trim)
+      val parentFile = file map(_.getParentFile) map(
+        f => new File(f, parentPath.getOrElse(".." + File.separator + "pom.xml")))
       val parent = try {
-        localParent(file, parentDep) orElse installedParent(parentDep)
+        localParent(parentFile, parentDep) orElse installedParent(parentDep)
       } catch {
         case e :Throwable =>
           warn("Failed to read parent pom (" + parentDep + "): " + e.getMessage) ; None
@@ -190,10 +194,7 @@ object POM {
 
   private def localParent (file :Option[File], parentDep :Option[Dependency]) = for {
     pdep <- parentDep
-    pomFile <- file
-    pomDir <- Option(pomFile.getParentFile)
-    parentDir <- Option(pomDir.getParentFile)
-    parentFile = new File(parentDir, "pom.xml")
+    parentFile <- file
     if (parentFile.exists)
     pom <- fromFile(parentFile)
     if (pom.toDependency() == pdep)
