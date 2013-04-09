@@ -39,6 +39,23 @@ class DependencyTest
       <optional>true</optional>
     </dependency>
 
+  val withExcludes =
+    <dependency>
+      <groupId>com.threerings</groupId>
+      <artifactId>aspirin</artifactId>
+      <version>1.0</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.threerings</groupId>
+          <artifactId>peanut</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.samskivert</groupId>
+          <artifactId>pansies</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
   @Test def testFromXML () {
     assertEquals(Dependency("org.apache.maven", "maven-core", "2.2.1",
                             DefaultType, None, DefaultScope, false), fromXML(mavenCore))
@@ -56,5 +73,10 @@ class DependencyTest
   @Test def testArtifactName () {
     assertEquals("maven-compiler-plugin-2.3.jar", fromXML(mavenCompiler).artifactName)
     assertEquals("aspirin-1.0-sources.swf", fromXML(full).artifactName)
+  }
+
+  @Test def testExcludes () {
+    assertEquals(Set(("com.threerings", "peanut"), ("com.samskivert", "pansies")),
+                 fromXML(withExcludes).exclusions)
   }
 }

@@ -213,7 +213,6 @@ class POMTest
                        "org.hsqldb:hsqldb:2.2.4:test",
                        "org.hamcrest:hamcrest-core:1.1:test"),
                    pom.transitiveDepends(true).map(ids))
-
     }
 
     val jettydep = Dependency("org.eclipse.jetty", "jetty-servlet", "9.0.0.RC2")

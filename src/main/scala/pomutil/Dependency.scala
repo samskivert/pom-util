@@ -11,13 +11,22 @@ import scala.xml.Node
  * Project dependency metadata.
  */
 case class Dependency (
+  /** The group id of this dependency. */
   groupId :String,
+  /** The artifact id of this dependency. */
   artifactId :String,
+  /** The version of this dependency. */
   version :String,
+  /** The type of this dependency. Examples: `jar`, `pom`. */
   `type` :String = Dependency.DefaultType,
+  /** The classifier for this dependency, if any. Examples: `source`, `javadoc`. */
   classifier :Option[String] = None,
+  /** The scope of this dependency. Examples: `compile`, `test`. */
   scope :String = Dependency.DefaultScope,
-  optional :Boolean = false
+  /** Whether this dependency is optional (when included transitively). */
+  optional :Boolean = false,
+  /** Any transitive exclusions expressed with this dependency, as `(groupId, artifactId)`. */
+  exclusions :Set[(String,String)] = Set()
 ) {
   /** Returns an identifier that encompases the group, artifact and version. */
   def id = groupId + ":" + artifactId + ":" + version
@@ -73,7 +82,8 @@ object Dependency {
     text(node, "type") map(pfunc) getOrElse(DefaultType),
     text(node, "classifier") map(pfunc),
     text(node, "scope") map(pfunc) getOrElse(DefaultScope),
-    text(node, "optional") map(pfunc) map(_.equalsIgnoreCase("true")) getOrElse(false))
+    text(node, "optional") map(pfunc) map(_.equalsIgnoreCase("true")) getOrElse(false),
+    Set() ++ node \ "exclusions" \\ "exclusion" map(toExclusion))
 
   /** Parses a dependency from the supplied XML, doing no property substitution. */
   def fromXML (node :Node) :Dependency = fromXML(ident)(node)
@@ -81,6 +91,8 @@ object Dependency {
   private def optRepoFile (segs :String*) = fileToOpt(file(m2repo, segs :_*))
   private def fileToOpt (file :File) = if (file.exists) Some(file) else None
   private def file (root :File, segs :String*) = (root /: segs)(new File(_, _))
+  private def toExclusion (node :Node) = (text(node, "groupId") getOrElse("missing"),
+                                          text(node, "artifactId") getOrElse("missing"))
 
   private val m2repo = file(new File(System.getProperty("user.home")), ".m2", "repository")
   private val ident = (text :String) => text

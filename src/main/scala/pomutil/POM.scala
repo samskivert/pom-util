@@ -98,7 +98,7 @@ class POM (
       allDeps ++= deps
       val newdeps = for { dep <- deps
                           pom <- dep.localPOM.flatMap(fromFile).toSeq
-                          dd <- pom.depends
+                          dd <- pom.depends filterNot(d => dep.exclusions((d.groupId, d.artifactId)))
                           if (dd.scope == "compile" && !dd.optional && !haveDeps(key(dd)))
                         } yield mapper(dd)
       // we might encounter the same dep from two parents, so we .distinct to consolidate
