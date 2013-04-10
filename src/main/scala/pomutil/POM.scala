@@ -16,6 +16,7 @@ import scala.xml.{XML, Node}
 class POM (
   val parent :Option[POM],
   val parentDep :Option[Dependency],
+  val file :Option[File],
   elem :Node
 ) {
   import POM._
@@ -185,7 +186,7 @@ object POM {
       if (parentDep.isDefined && !parent.isDefined) {
         warn(text(elem, "artifactId").getOrElse("unknown") + " missing parent: " + parentDep.get.id)
       }
-      Some(new POM(parent, parentDep, elem))
+      Some(new POM(parent, parentDep, file, elem))
     }
     case _ => None
   }
