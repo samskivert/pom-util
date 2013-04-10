@@ -170,12 +170,11 @@ object POM {
   /** Parses a POM from the supplied XML. */
   def fromXML (node :Node, file :Option[File]) :Option[POM] = node match {
     case elem if (elem.label == "project") => {
-      // TODO: handle relativepath
       val parentDep = (elem \ "parent").headOption map(Dependency.fromXML) map(
         _.copy(`type` = "pom"))
-      val parentPath = (elem \ "parent" \ "relativePath").headOption map(_.text.trim)
-      val parentFile = file map(_.getParentFile) map(
-        f => new File(f, parentPath.getOrElse(".." + File.separator + "pom.xml")))
+      val parentPath = (elem \ "parent" \ "relativePath").headOption map(_.text.trim) getOrElse(
+        ".." + File.separator + "pom.xml")
+      val parentFile = file map(f => new File(f.getParentFile, parentPath).getCanonicalFile)
       val parent = try {
         localParent(parentFile, parentDep) orElse installedParent(parentDep)
       } catch {
