@@ -5,7 +5,7 @@
 package pomutil
 
 import java.io.File
-import java.util.regex.Pattern
+import java.util.regex.{Pattern, Matcher}
 
 import scala.collection.mutable.{ArrayBuffer, Set => MSet}
 import scala.xml.{XML, Node}
@@ -119,7 +119,7 @@ class POM (
     val sb = new StringBuffer
     while (m.find()) {
       val name = m.group(1)
-      m.appendReplacement(sb, getAttr(name).getOrElse("\\$!{" + name + "}"))
+      m.appendReplacement(sb, Matcher.quoteReplacement(getAttr(name).getOrElse("$!{" + name + "}")))
     }
     m.appendTail(sb)
     sb.toString
