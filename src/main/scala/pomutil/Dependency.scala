@@ -88,6 +88,9 @@ object Dependency {
   /** Parses a dependency from the supplied XML, doing no property substitution. */
   def fromXML (node :Node) :Dependency = fromXML(ident)(node)
 
+  /** Returns true if the supplied file is in the .m2 repository. */
+  def isRepoFile (file :File) = file.getPath.startsWith(m2repo.getPath)
+
   private def optRepoFile (segs :String*) = fileToOpt(file(m2repo, segs :_*))
   private def fileToOpt (file :File) = if (file.exists) Some(file) else None
   private def file (root :File, segs :String*) = (root /: segs)(new File(_, _))

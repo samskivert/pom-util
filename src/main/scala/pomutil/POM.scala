@@ -54,6 +54,15 @@ class POM (
   /** Returns all modules defined in the main POM and in all profiles. */
   def allModules = modules ++ profiles.flatMap(_.modules)
 
+  /** Returns the file for the top-most POM in the multimodule project of which this POM is a part.
+    * This will return `None` if the POM was loaded from the .m2 repository. If this POM is not
+    * part of a multimodule project (but was not loaded from the .m2 repository), it will return
+    * itself as the top-most POM. */
+  def rootPOM :Option[File] = parent flatMap(_ rootPOM) orElse (file match {
+    case Some(f) if (!Dependency.isRepoFile(f)) => file
+    case _ => None
+  })
+
   // TODO: other bits
 
   /** Looks up a POM attribute, which may include properties defined in the POM as well as basic
@@ -79,9 +88,17 @@ class POM (
     * other than `compile` and `test` are included for this project, but not transitively, also per
     * standard Maven semantics.
     *
+    * If this POM is part of a multi-module project, sibling dependencies will be resolved via the
+    * POMs in sibling directories rather than via the .m2 repository. This differs from Maven, but
+    * is vastly more useful and I wish Maven did things this way.
+    *
     * @param forTest whether to include test dependencies.
     */
   def transitiveDepends (forTest :Boolean) :Seq[Dependency] = {
+    // if we're part of a multimodule project, we want to resolve our "sibling" dependencies from
+    // their neighboring directories rather than looking for them in the .m2 repository
+    val sibDeps = rootPOM map(POM.allModules) getOrElse(Map())
+
     val haveDeps = MSet[(String,String)]()
     val allDeps = ArrayBuffer[Dependency]()
     def key (d :Dependency) = (d.groupId, d.artifactId)
@@ -98,7 +115,9 @@ class POM (
       haveDeps ++= (deps map key)
       allDeps ++= deps
       val newdeps = for { dep <- deps
-                          pom <- dep.localPOM.flatMap(fromFile).toSeq
+                          // if this depend is a sibling, use the "real" POM, otherwise get it from
+                          // the .m2 repository
+                          pom <- (sibDeps.get(dep.id) orElse dep.localPOM.flatMap(fromFile)).toSeq
                           dd <- pom.depends filterNot(d => dep.exclusions((d.groupId, d.artifactId)))
                           if (dd.scope == "compile" && !dd.optional && !haveDeps(key(dd)))
                         } yield mapper(dd)
@@ -188,6 +207,17 @@ object POM {
       Some(new POM(parent, parentDep, file, elem))
     }
     case _ => None
+  }
+
+  /** Resolves the transitive set of all POMs included in the multi-module project rooted at `top`.
+    * @return a mapping from dependency `id` to `POM` for this POM and all of its submodules. */
+  def allModules (top :File) :Map[String,POM] = fromFile(top) match {
+    case None => Map()
+    case Some(pom) => {
+      val topDir = top.getParentFile
+      Map(pom.id -> pom) ++ pom.allModules.flatMap(
+        m => allModules(new File(new File(topDir, m), "pom.xml")))
+    }
   }
 
   private val knownBuildProps = Set("sourceDirectory", "testSourceDirectory")
