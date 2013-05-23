@@ -171,6 +171,8 @@ class POMTest
     assertEquals(pom.profiles.map(_.id), Seq("java", "android"))
     assertEquals(pom.profiles.map(_.modules), Seq(Seq("java"), Seq("android")))
     assertEquals(pom.allModules, Seq("core", "java", "android"))
+    assertEquals(pom.modules("java"), Seq("core", "java"))
+    assertEquals(pom.modules("android"), Seq("core", "android"))
   }
 
   @Test def testBuildProps () {

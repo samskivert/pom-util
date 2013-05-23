@@ -49,10 +49,14 @@ class POM (
       n => (n.label.trim, n.text.trim)) toMap // TODO: extract deeper stuffs
 
   /** Returns an identifier that encompases the group, artifact and version. */
-  def id = groupId + ":" + artifactId + ":" + version
+  def id :String = groupId + ":" + artifactId + ":" + version
+
+  /** Returns all the modules in the specified profile. */
+  def modules (profileId :String) :Seq[String] =
+    modules ++ profiles.find(_.id == profileId).toSeq.flatMap(_.modules)
 
   /** Returns all modules defined in the main POM and in all profiles. */
-  def allModules = modules ++ profiles.flatMap(_.modules)
+  def allModules :Seq[String] = modules ++ profiles.flatMap(_.modules)
 
   /** Returns the file for the top-most POM in the multimodule project of which this POM is a part.
     * This will return `None` if the POM was loaded from the .m2 repository. If this POM is not
