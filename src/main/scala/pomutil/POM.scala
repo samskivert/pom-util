@@ -26,7 +26,7 @@ class POM (
   lazy val groupId    :String = iattr("groupId", _.groupId)
   lazy val artifactId :String = attr("artifactId") getOrElse("missing")
   lazy val version    :String = iattr("version", _.version)
-  lazy val packaging  :String = iattr("packaging", _.packaging)
+  lazy val packaging  :String = attr("packaging") getOrElse("jar")
 
   lazy val name        :Option[String] = attr("name")
   lazy val description :Option[String] = attr("description")
