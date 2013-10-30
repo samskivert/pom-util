@@ -73,7 +73,9 @@ class POM (
     * project attributes like `project.version`, etc. */
   def getAttr (name :String) :Option[String] =
     // TODO: support env.x and Java system properties?
-    getProjectAttr(name) orElse properties.get(name) orElse parent.flatMap(_.getAttr(name))
+    // TODO: avoid infinite loop if `properties` map contains cycles
+    getProjectAttr(name) orElse properties.get(name).map(subProps) orElse
+      parent.flatMap(_.getAttr(name))
 
   /** Returns a dependency on the (optionally classified) artifact described by this POM. */
   def toDependency (classifier :Option[String] = None,

@@ -34,6 +34,7 @@ class POMTest
       <properties>
         <foo>bar</foo>
         <servlet.version>2.5</servlet.version>
+        <recurse.version>${{servlet.version}}</recurse.version>
       </properties>
 
       <dependencies>
@@ -141,12 +142,16 @@ class POMTest
     assertEquals(Some("samskivert"), pom.name)
     assertEquals(None, pom.description)
     assertEquals(Some("http://github.com/samskivert/samskivert"), pom.url)
-    assertEquals(Map("foo" -> "bar", "servlet.version" -> "2.5"), pom.properties)
+    assertEquals(Map("foo" -> "bar", "servlet.version" -> "2.5",
+                     "recurse.version" -> "${servlet.version}"), pom.properties)
     assertEquals(Seq(Dependency("javax.servlet", "servlet-api", "2.5", scope="provided"),
                      Dependency("log4j", "log4j", "1.2.16", optional=true)), pom.depends)
     // check that we can read a property defined in our parent POM
     assertEquals(Some("https://oss.sonatype.org/content/repositories/snapshots/"),
                  pom.getAttr("sonatypeOssDistMgmtSnapshotsUrl"))
+
+    // check that properties which reference other properties also work
+    assertEquals(pom.getAttr("servlet.version"), pom.getAttr("recurse.version"))
 
     // test modules parsing
     val mpom = fromXML(metaPom, None).get
@@ -160,7 +165,7 @@ class POMTest
     assertEquals("org.apache.maven", pom.groupId)
     assertEquals("maven-core", pom.artifactId)
     assertEquals("2.2.1", pom.version)
-    assertEquals("pom", pom.packaging)
+    assertEquals("jar", pom.packaging)
     assertEquals(Some("Maven Core"), pom.name)
     assertEquals(None, pom.description)
     assertEquals(None, pom.url)
