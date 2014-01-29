@@ -72,16 +72,16 @@ class POM (
   /** Looks up a POM attribute, which may include properties defined in the POM as well as basic
     * project attributes like `project.version`, etc. */
   def getAttr (name :String) :Option[String] =
-    // TODO: support env.x and Java system properties?
+    // TODO: support env.x properties?
     // TODO: avoid infinite loop if `properties` map contains cycles
-    getProjectAttr(name) orElse properties.get(name).map(subProps) orElse
+    getProjectAttr(name) orElse getEnvAttr(name) orElse properties.get(name).map(subProps) orElse
       parent.flatMap(_.getAttr(name))
 
   /** Returns a dependency on the (optionally classified) artifact described by this POM. */
   def toDependency (classifier :Option[String] = None,
                     scope :String = Dependency.DefaultScope,
                     optional :Boolean = false) =
-    Dependency(groupId, artifactId, version, packaging, classifier, scope, optional)
+    Dependency(groupId, artifactId, version, packaging, classifier, scope, None, optional)
 
   /** Returns true if this POM declares a snapshot artifact, false otherwise. */
   def isSnapshot = version.endsWith("-SNAPSHOT")
@@ -173,6 +173,8 @@ class POM (
       }
       case _ => None
     }
+
+  private def getEnvAttr (key :String) :Option[String] = Option(System.getProperty(key))
 
   // replaces any depends with "canonical" version from depmgmt section
   private def manageDepends (depends :Seq[Dependency]) :Seq[Dependency] = {
