@@ -23,6 +23,8 @@ case class Dependency (
   classifier :Option[String] = None,
   /** The scope of this dependency. Examples: `compile`, `test`. */
   scope :String = Dependency.DefaultScope,
+  /** The system path, if onen is set. */
+  systemPath :Option[String] = None,
   /** Whether this dependency is optional (when included transitively). */
   optional :Boolean = false,
   /** Any transitive exclusions expressed with this dependency, as `(groupId, artifactId)`. */
@@ -82,6 +84,7 @@ object Dependency {
     text(node, "type") map(pfunc) getOrElse(DefaultType),
     text(node, "classifier") map(pfunc),
     text(node, "scope") map(pfunc) getOrElse(DefaultScope),
+    text(node, "systemPath") map(pfunc),
     text(node, "optional") map(pfunc) map(_.equalsIgnoreCase("true")) getOrElse(false),
     Set() ++ node \ "exclusions" \\ "exclusion" map(toExclusion))
 

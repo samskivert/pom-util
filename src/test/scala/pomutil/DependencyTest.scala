@@ -58,9 +58,9 @@ class DependencyTest
 
   @Test def testFromXML () {
     assertEquals(Dependency("org.apache.maven", "maven-core", "2.2.1",
-                            DefaultType, None, DefaultScope, false), fromXML(mavenCore))
+                            DefaultType, None, DefaultScope, None, false), fromXML(mavenCore))
     assertEquals(Dependency("com.threerings", "aspirin", "1.0",
-                            "swf", Some("sources"), "test", true), fromXML(full))
+                            "swf", Some("sources"), "test", None, true), fromXML(full))
   }
 
   @Test def testLocalFiles () {
