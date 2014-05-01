@@ -31,6 +31,12 @@ class POMTest
       <name>samskivert</name>
       <url>http://github.com/samskivert/samskivert</url>
 
+      <scm>
+        <connection>scm:git:git://github.com/samskivert/samskivert.git</connection>
+        <developerConnection>scm:git:git@github.com:samskivert/samskivert.git</developerConnection>
+        <url>http://github.com/samskivert/samskivert/</url>
+      </scm>
+
       <properties>
         <foo>bar</foo>
         <servlet.version>2.5</servlet.version>
@@ -139,6 +145,9 @@ class POMTest
     assertEquals("samskivert", pom.artifactId)
     assertEquals("1.6-SNAPSHOT", pom.version)
     assertEquals("jar", pom.packaging)
+    assertEquals(SCM(Some("scm:git:git://github.com/samskivert/samskivert.git"),
+                     Some("scm:git:git@github.com:samskivert/samskivert.git"),
+                     Some("http://github.com/samskivert/samskivert/")), pom.scm)
     assertEquals(Some("samskivert"), pom.name)
     assertEquals(None, pom.description)
     assertEquals(Some("http://github.com/samskivert/samskivert"), pom.url)
@@ -169,6 +178,7 @@ class POMTest
     assertEquals(Some("Maven Core"), pom.name)
     assertEquals(None, pom.description)
     assertEquals(None, pom.url)
+    assertEquals(SCM(None, None, None), pom.scm)
   }
 
   @Test def testProfiles () {

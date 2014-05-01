@@ -32,6 +32,13 @@ class POM (
   lazy val description :Option[String] = attr("description")
   lazy val url         :Option[String] = attr("url")
 
+  lazy val scm :SCM = (elem \ "scm") match {
+    case Seq(scm) => SCM(attr(scm, "connection"),
+                         attr(scm, "developerConnection"),
+                         attr(scm, "url"))
+    case        _ => SCM(None, None, None)
+  }
+
   lazy val modules    :Seq[String]  = (elem \ "modules" \\ "module") map(_.text.trim)
   lazy val profiles   :Seq[Profile] = (elem \ "profiles" \\ "profile") map(new Profile(this, _))
   lazy val properties :Map[String,String] =
@@ -190,6 +197,13 @@ class POM (
 
 object POM {
   import XMLUtil._
+
+  /** Contains the contents of the `<scm>` group. */
+  case class SCM (
+    val connection    :Option[String],
+    val devConnection :Option[String],
+    val url           :Option[String]
+  )
 
   /** Parses the POM in the specified file. */
   def fromFile (file :File) :Option[POM] = fromXML(XML.loadFile(file), Some(file.getAbsoluteFile))
