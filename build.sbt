@@ -4,13 +4,14 @@ name := "pom-util"
 
 version := "0.7-SNAPSHOT"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.11.0"
 
-crossScalaVersions := Seq("2.9.2", "2.10")
+// crossScalaVersions := Seq("2.x.y") // no longer support old Scalas due to scala-xml
 
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 libraryDependencies ++= Seq(
+  "org.scala-lang.modules" %% "scala-xml" % "1.0.1",
   "junit" % "junit" % "4.10" % "test",
   "com.novocode" % "junit-interface" % "0.7" % "test->default"
 )
