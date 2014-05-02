@@ -96,54 +96,9 @@ class POM (
   /** Extracts the text of an attribute from the supplied element and substitutes properties. */
   def attr (elem :Node, name :String) :Option[String] = XMLUtil.text(elem, name) map(subProps)
 
-  /** Computes this POM's transitive dependencies. Exclusions are honored, and conflicts are resolved
-    * using the standard "distance from root POM" Maven semantics. Direct dependencies with scopes
-    * other than `compile` and `test` are included for this project, but not transitively, also per
-    * standard Maven semantics.
-    *
-    * If this POM is part of a multi-module project, sibling dependencies will be resolved via the
-    * POMs in sibling directories rather than via the .m2 repository. This differs from Maven, but
-    * is vastly more useful and I wish Maven did things this way.
-    *
-    * @param forTest whether to include test dependencies.
-    */
-  def transitiveDepends (forTest :Boolean) :Seq[Dependency] = {
-    // if we're part of a multimodule project, we want to resolve our "sibling" dependencies from
-    // their neighboring directories rather than looking for them in the .m2 repository
-    val sibDeps = rootPOM map(POM.allModules) getOrElse(Map())
-
-    val haveDeps = MSet[(String,String)]()
-    val allDeps = ArrayBuffer[Dependency]()
-    def key (d :Dependency) = (d.groupId, d.artifactId)
-
-    // we expand our dependency tree one "layer" at a time; we start with the depends at distance
-    // one from the project (its direct dependencies), then we compute all of the direct
-    // dependencies of those depends (distance two) and filter out any that are already satisfied
-    // (this enforces the "closest to the root POM" conflict resolution strategy), then we repeat
-    // the process, expanding to distance three and so forth, until we discover no new depends
-
-    // TODO: handle exclusions
-
-    def extract (deps :Seq[Dependency], mapper :(Dependency => Dependency)) {
-      haveDeps ++= (deps map key)
-      allDeps ++= deps
-      val newdeps = for { dep <- deps
-                          // if this depend is a sibling, use the "real" POM, otherwise get it from
-                          // the .m2 repository
-                          pom <- (sibDeps.get(dep.id) orElse dep.localPOM.flatMap(fromFile)).toSeq
-                          dd <- pom.depends filterNot(d => dep.exclusions((d.groupId, d.artifactId)))
-                          if (dd.scope == "compile" && !dd.optional && !haveDeps(key(dd)))
-                        } yield mapper(dd)
-      // we might encounter the same dep from two parents, so we .distinct to consolidate
-      if (!newdeps.isEmpty) extract(newdeps.distinct, mapper)
-    }
-
-    val (compDeps, testDeps) = depends partition(_.scope != "test")
-    extract(compDeps, d => d)
-    if (forTest) extract(testDeps, _.copy(scope="test"))
-
-    allDeps.toSeq
-  }
+  @deprecated("Use DependResolver", "0.7")
+  def transitiveDepends (forTest :Boolean) :Seq[Dependency] =
+    new DependResolver(this).resolve(forTest)
 
   /** A function that substitutes this POM's properties into the supplied text. */
   val subProps = (text :String) => {

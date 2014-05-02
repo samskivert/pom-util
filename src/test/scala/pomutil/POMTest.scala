@@ -201,7 +201,7 @@ class POMTest
 
     val samdep = Dependency("com.samskivert", "samskivert", "1.6")
     samdep.localPOM.flatMap(POM.fromFile) foreach { pom =>
-      // pom.transitiveDepends(false).map(ids) foreach println
+      // new DependResolver(pom).resolve(false).map(ids) foreach println
       assertEquals(Seq("javax.servlet:servlet-api:2.5:provided",
                        "log4j:log4j:1.2.16:compile",
                        "javax.mail:mail:1.4.1:compile",
@@ -213,8 +213,8 @@ class POMTest
                        "oro:oro:2.0.8:compile",
                        "commons-beanutils:commons-beanutils:1.8.0:compile",
                        "commons-logging:commons-logging:1.1.1:compile"),
-                   pom.transitiveDepends(false).map(ids))
-      // pom.transitiveDepends(true).map(ids) foreach println
+                   new DependResolver(pom).resolve(false).map(ids))
+      // new DepenResolver(pom).resolve(true).map(ids) foreach println
       assertEquals(Seq("javax.servlet:servlet-api:2.5:provided",
                        "log4j:log4j:1.2.16:compile",
                        "javax.mail:mail:1.4.1:compile",
@@ -229,12 +229,12 @@ class POMTest
                        "junit:junit:4.10:test",
                        "org.hsqldb:hsqldb:2.2.4:test",
                        "org.hamcrest:hamcrest-core:1.1:test"),
-                   pom.transitiveDepends(true).map(ids))
+                   new DependResolver(pom).resolve(true).map(ids))
     }
 
     val jettydep = Dependency("org.eclipse.jetty", "jetty-servlet", "9.0.0.RC2")
     jettydep.localPOM.flatMap(POM.fromFile) foreach { pom =>
-      // pom.transitiveDepends(false).map(ids) foreach println
+      // new DependResolver(pom).resolve(false).map(ids) foreach println
       assertEquals(Seq("org.eclipse.jetty:jetty-security:9.0.0.RC2:compile",
                        "org.eclipse.jetty:jetty-jmx:9.0.0.RC2:compile",
                        "org.eclipse.jetty:jetty-server:9.0.0.RC2:compile",
@@ -243,7 +243,7 @@ class POMTest
                        "org.eclipse.jetty:jetty-io:9.0.0.RC2:compile",
                        // this depend comes in twice from two parents, but should only appear once
                        "org.eclipse.jetty:jetty-util:9.0.0.RC2:compile"),
-                   pom.transitiveDepends(false).map(ids))
+                   new DependResolver(pom).resolve(false).map(ids))
     }
   }
 }
