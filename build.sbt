@@ -6,7 +6,7 @@ version := "0.7-SNAPSHOT"
 
 scalaVersion := "2.11.0"
 
-// crossScalaVersions := Seq("2.x.y") // no longer support old Scalas due to scala-xml
+crossPaths := false
 
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
