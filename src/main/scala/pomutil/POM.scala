@@ -63,7 +63,14 @@ class POM (
     modules ++ profiles.find(_.id == profileId).toSeq.flatMap(_.modules)
 
   /** Returns all modules defined in the main POM and in all profiles. */
-  def allModules :Seq[String] = modules ++ profiles.flatMap(_.modules)
+  def allModules :Seq[String] = (modules ++ profiles.flatMap(_.modules)).distinct
+
+  /** Returns the dependencies in this POM, assuming the specified profile is active. */
+  def depends (profileId :String) :Seq[Dependency] =
+    depends ++ profiles.find(_.id == profileId).toSeq.flatMap(_.depends)
+
+  /** Returns all dependencies defined in the main POM and in all profiles. */
+  def allDepends :Seq[Dependency] = (depends ++ profiles.flatMap(_.depends)).distinct
 
   /** Returns the file for the top-most POM in the multimodule project of which this POM is a part.
     * This will return `None` if the POM was loaded from the .m2 repository. If this POM is not
