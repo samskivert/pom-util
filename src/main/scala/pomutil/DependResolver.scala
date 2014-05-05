@@ -40,8 +40,6 @@ class DependResolver (pom :POM) {
     // (this enforces the "closest to the root POM" conflict resolution strategy), then we repeat
     // the process, expanding to distance three and so forth, until we discover no new depends
 
-    // TODO: handle exclusions
-
     def extract (deps :Seq[Dependency], mapper :(Dependency => Dependency)) {
       haveDeps ++= (deps map key)
       allDeps ++= deps
