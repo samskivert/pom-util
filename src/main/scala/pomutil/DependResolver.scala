@@ -54,12 +54,17 @@ class DependResolver (pom :POM) {
       if (!newdeps.isEmpty) extract(newdeps.distinct, mapper)
     }
 
-    val (compDeps, testDeps) = pom.depends partition(_.scope != "test")
-    extract(compDeps, d => d)
-    if (forTest) extract(testDeps, _.copy(scope="test"))
+    extract(rootDepends(false), d => d)
+    if (forTest) extract(rootDepends(true), _.copy(scope="test"))
 
     allDeps.toSeq
   }
+
+  /** Returns the root depends from which the transitive depends are expanded. By default this is all
+    * the depends in `pom`, but derived classes may wish to customize.
+    */
+  protected def rootDepends (forTest :Boolean) :Seq[Dependency] =
+    pom.depends filter(d => (d.scope == "test") == forTest)
 
   /** Checks for a "local" version of `dep`. The default implementation checks whether `dep`
     * represents a sibling module in a mutli-module project, and returns the working copy of the
