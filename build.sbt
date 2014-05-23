@@ -13,8 +13,10 @@ scalacOptions ++= Seq("-unchecked", "-deprecation")
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % "1.0.1",
   "junit" % "junit" % "4.10" % "test",
-  "com.novocode" % "junit-interface" % "0.7" % "test->default"
+  "com.novocode" % "junit-interface" % "0.10" % "test->default"
 )
+
+testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v")
 
 //
 // Various POM additions and Maven Central publishing bits
