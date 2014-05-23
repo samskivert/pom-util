@@ -60,11 +60,12 @@ class DependResolver (pom :POM) {
     allDeps.toSeq
   }
 
-  /** Returns the root depends from which the transitive depends are expanded. By default this is all
-    * the depends in `pom`, but derived classes may wish to customize.
+  /** Returns the root depends from which the transitive depends are expanded. By default this is
+    * all the depends in `pom` (and any depends provided by its parents), but derived classes may
+    * wish to customize.
     */
   protected def rootDepends (forTest :Boolean) :Seq[Dependency] =
-    pom.depends filter(d => (d.scope == "test") == forTest)
+    pom.fullDepends filter(d => (d.scope == "test") == forTest)
 
   /** Checks for a "local" version of `dep`. The default implementation checks whether `dep`
     * represents a sibling module in a mutli-module project, and returns the working copy of the

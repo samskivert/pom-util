@@ -50,6 +50,9 @@ class POM (
     (elem \ "dependencyManagement" \ "dependencies" \ "dependency") map(
       Dependency.fromXML(subProps)) map(d => (d.mgmtKey, d)) toMap
 
+  /** Returns the depends in this POM and any depends inherited from its parents. */
+  def fullDepends :Seq[Dependency] = parent.map(_.fullDepends).getOrElse(Seq()) ++ depends
+
   /** Build properties like `sourceDirectory` and other simple stuff. */
   lazy val buildProps :Map[String,String] =
     (elem \ "build" \ "_") filter(n => knownBuildProps(n.label.trim)) map(
