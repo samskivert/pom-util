@@ -129,6 +129,14 @@ class POMTest
          </plugin>
         </plugins>
 
+        <resources>
+          <resource>
+            <directory>rsrcs</directory>
+            <includes><include>foo*</include></includes>
+            <excludes><exclude>bar*</exclude></excludes>
+          </resource>
+        </resources>
+
         <testResources>
           <testResource>
             <directory>tests</directory>
@@ -194,6 +202,9 @@ class POMTest
     val pom = fromXML(buildPropped, None).get
     assertEquals("src", pom.buildProps("sourceDirectory"))
     assertEquals("tests", pom.buildProps("testSourceDirectory"))
+    assertEquals(Seq(Resource("rsrcs", false, Seq("foo*"), Seq("bar*"), None)),
+                 pom.resources)
+    assertEquals(Seq(Resource("tests", false, Seq(), Seq(), None)), pom.testResources)
   }
 
   @Test def testTransDeps () {

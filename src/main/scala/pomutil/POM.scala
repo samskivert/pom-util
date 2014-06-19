@@ -39,6 +39,10 @@ class POM (
     case        _ => SCM(None, None, None)
   }
 
+  lazy val resources :Seq[Resource] = (elem \ "build" \ "resources" \\ "resource") map(toResource)
+  lazy val testResources :Seq[Resource] =
+    (elem \ "build" \ "testResources" \\ "testResource") map(toResource)
+
   lazy val modules    :Seq[String]  = (elem \ "modules" \\ "module") map(_.text.trim)
   lazy val profiles   :Seq[Profile] = (elem \ "profiles" \\ "profile") map(new Profile(this, _))
   lazy val properties :Map[String,String] =
@@ -148,6 +152,13 @@ class POM (
 
   private def getEnvAttr (key :String) :Option[String] = Option(System.getProperty(key))
 
+  private def toResource (elem :Node) = Resource(
+    attr(elem, "directory") getOrElse("resourceMissingDirectory"),
+    (attr(elem, "filtering") getOrElse("false")).toBoolean,
+    (elem \ "includes" \\ "include") map(_.text.trim),
+    (elem \ "excludes" \\ "exclude") map(_.text.trim),
+    attr(elem, "targetPath"))
+
   // replaces any depends with "canonical" version from depmgmt section
   private def manageDepends (depends :Seq[Dependency]) :Seq[Dependency] = {
     val managed = depends map(d => dependMgmt.get(d.mgmtKey) match {
@@ -163,11 +174,20 @@ class POM (
 object POM {
   import XMLUtil._
 
-  /** Contains the contents of the `<scm>` group. */
+  /** Models the contents of the `<scm>` group. */
   case class SCM (
     val connection    :Option[String],
     val devConnection :Option[String],
     val url           :Option[String]
+  )
+
+  /** Models the contents of the `<resources>` and `<testResources>` groups. */
+  case class Resource (
+    val directory  :String,
+    val filtering  :Boolean,
+    val includes   :Seq[String],
+    val excludes   :Seq[String],
+    val targetPath :Option[String]
   )
 
   /** Parses the POM in the specified file. */
