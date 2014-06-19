@@ -39,9 +39,14 @@ class POM (
     case        _ => SCM(None, None, None)
   }
 
-  lazy val resources :Seq[Resource] = (elem \ "build" \ "resources" \\ "resource") map(toResource)
-  lazy val testResources :Seq[Resource] =
-    (elem \ "build" \ "testResources" \\ "testResource") map(toResource)
+  lazy val resources :Seq[Resource] = {
+    val rs = (elem \ "build" \ "resources" \\ "resource") map(toResource)
+    if (rs.isEmpty) Seq(Resource(path("src", "main", "resources"))) else rs
+  }
+  lazy val testResources :Seq[Resource] = {
+    val rs = (elem \ "build" \ "testResources" \\ "testResource") map(toResource)
+    if (rs.isEmpty) Seq(Resource(path("src", "test", "resources"))) else rs
+  }
 
   lazy val modules    :Seq[String]  = (elem \ "modules" \\ "module") map(_.text.trim)
   lazy val profiles   :Seq[Profile] = (elem \ "profiles" \\ "profile") map(new Profile(this, _))
@@ -184,10 +189,10 @@ object POM {
   /** Models the contents of the `<resources>` and `<testResources>` groups. */
   case class Resource (
     val directory  :String,
-    val filtering  :Boolean,
-    val includes   :Seq[String],
-    val excludes   :Seq[String],
-    val targetPath :Option[String]
+    val filtering  :Boolean = false,
+    val includes   :Seq[String] = Seq(),
+    val excludes   :Seq[String] = Seq(),
+    val targetPath :Option[String] = None
   )
 
   /** Parses the POM in the specified file. */
@@ -199,7 +204,7 @@ object POM {
       val parentDep = (elem \ "parent").headOption map(Dependency.fromXML) map(
         _.copy(`type` = "pom"))
       val parentPath = (elem \ "parent" \ "relativePath").headOption map(_.text.trim) getOrElse(
-        ".." + File.separator + "pom.xml")
+        path("..", "pom.xml"))
       val parentFile = file map(f => new File(f.getParentFile, parentPath).getCanonicalFile)
       val parent = try {
         localParent(parentFile, parentDep) orElse installedParent(parentDep)
@@ -228,6 +233,8 @@ object POM {
   }
 
   private val knownBuildProps = Set("sourceDirectory", "testSourceDirectory")
+
+  private def path (comps :String*) = (comps.head /: comps.tail)(_ + File.separator + _)
 
   private def localParent (file :Option[File], parentDep :Option[Dependency]) = for {
     pdep <- parentDep

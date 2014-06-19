@@ -202,9 +202,8 @@ class POMTest
     val pom = fromXML(buildPropped, None).get
     assertEquals("src", pom.buildProps("sourceDirectory"))
     assertEquals("tests", pom.buildProps("testSourceDirectory"))
-    assertEquals(Seq(Resource("rsrcs", false, Seq("foo*"), Seq("bar*"), None)),
-                 pom.resources)
-    assertEquals(Seq(Resource("tests", false, Seq(), Seq(), None)), pom.testResources)
+    assertEquals(Seq(Resource("rsrcs", false, Seq("foo*"), Seq("bar*"))), pom.resources)
+    assertEquals(Seq(Resource("tests")), pom.testResources)
   }
 
   @Test def testTransDeps () {
