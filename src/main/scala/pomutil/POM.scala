@@ -138,7 +138,9 @@ class POM (
     attr(name) orElse(parent map pfunc) getOrElse("missing")
 
   private def getProjectAttr (key :String) :Option[String] =
-    if (!key.startsWith("project.")) None else key.substring(8) match {
+    if (key == "basedir") file.map(_.getParentFile.getAbsolutePath)
+    else if (!key.startsWith("project.")) None
+    else key.substring(8) match {
       case "groupId" => Some(groupId)
       case "artifactId" => Some(artifactId)
       case "version" => Some(version)
