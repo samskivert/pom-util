@@ -132,7 +132,7 @@ class POM (
 
   @deprecated("Use DependResolver", "0.7")
   def transitiveDepends (forTest :Boolean) :Seq[Dependency] =
-    new DependResolver(this).resolve(forTest)
+    new DependResolver(this).resolve(if (forTest) DependResolver.Test else DependResolver.Compile)
 
   /** A function that substitutes this POM's properties into the supplied text. */
   val subProps = (text :String) => {

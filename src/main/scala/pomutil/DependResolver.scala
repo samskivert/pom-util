@@ -17,19 +17,17 @@ import scala.collection.mutable.{ArrayBuffer, Set => MSet}
   * "working copies" of SNAPSHOT projects rather than the POM most recently installed into `~/.m2`.
   */
 class DependResolver (pom :POM) {
+  import DependResolver._
 
   // if we're part of a multimodule project, we want to resolve our "sibling" dependencies from
   // their neighboring directories rather than looking for them in the .m2 repository
   private val sibDeps :Map[String,POM] = pom.rootPOM map(POM.allModules) getOrElse(Map())
 
   /** Resolves our POM's transitive dependencies. Exclusions are honored, and conflicts are resolved
-    * using the standard "distance from root POM" Maven semantics. Direct dependencies with scopes
-    * other than `compile` and `test` are included for this project, but not transitively, also per
-    * standard Maven semantics.
-    *
-    * @param forTest whether to include test dependencies.
+    * using the standard "distance from root POM" Maven semantics. Direct and transitive
+    * dependencies are resolved per the specified scope.
     */
-  def resolve (forTest :Boolean) :Seq[Dependency] = {
+  def resolve (scope :Scope = Compile) :Seq[Dependency] = {
     val haveDeps = MSet[(String,String)]()
     val allDeps = ArrayBuffer[Dependency]()
     def key (d :Dependency) = (d.groupId, d.artifactId)
@@ -48,24 +46,30 @@ class DependResolver (pom :POM) {
         // if we have a local version of depend, use it, otherwise get it from ~/.m2/repository
         pom <- (localDep(dep) orElse dep.localPOM.flatMap(POM.fromFile)).toSeq
         dd <- pom.depends filterNot(d => dep.exclusions((d.groupId, d.artifactId)))
-        if (dd.scope == "compile" && !dd.optional && !haveDeps(key(dd)))
+        if (scope.includeTrans(dd.scope) && !dd.optional && !haveDeps(key(dd)))
       } yield mapper(dd)
       // we might encounter the same dep from two parents, so we .distinct to consolidate
       if (!newdeps.isEmpty) extract(newdeps.distinct, mapper)
     }
 
-    extract(rootDepends(false), d => d)
-    if (forTest) extract(rootDepends(true), _.copy(scope="test"))
+    extract(rootDepends(Compile), d => d)
+    if (scope != Compile) {
+      val scopeId = scope.id
+      extract(rootDepends(scope), _.copy(scope=scopeId))
+    }
 
     allDeps.toSeq
   }
+
+  @deprecated("Use new resolve(Scope)")
+  def resolve (forTest :Boolean) :Seq[Dependency] = resolve(if (forTest) Compile else Test)
 
   /** Returns the root depends from which the transitive depends are expanded. By default this is
     * all the depends in `pom` (and any depends provided by its parents), but derived classes may
     * wish to customize.
     */
-  protected def rootDepends (forTest :Boolean) :Seq[Dependency] =
-    pom.fullDepends filter(d => (d.scope == "test") == forTest)
+  protected def rootDepends (scope :Scope) :Seq[Dependency] =
+    pom.fullDepends filter(d => scope.includeRoot(d.scope))
 
   /** Checks for a "local" version of `dep`. The default implementation checks whether `dep`
     * represents a sibling module in a mutli-module project, and returns the working copy of the
@@ -77,4 +81,35 @@ class DependResolver (pom :POM) {
     * that depend on it, instead of using whatever was most recently installed into `~/.m2`.
     */
   protected def localDep (dep :Dependency) :Option[POM] = sibDeps.get(dep.id)
+}
+
+object DependResolver {
+
+  /** Defines dependency inclusion policy for a Maven scope. */
+  sealed trait Scope {
+    def id :String
+    def includeRoot (scope :String) :Boolean
+    def includeTrans (scope :String) :Boolean
+  }
+
+  /** Includes all non-test, non-runtime root depends, and compile transitive depends. */
+  case object Compile extends Scope {
+    def id :String = "compile"
+    def includeRoot (scope :String) = scope != "test" && scope != "runtime"
+    def includeTrans (scope :String) = scope == "compile"
+  }
+
+  /** Includes all test or runtime root depends, and compile and runtime transitive depends. */
+  case object Test extends Scope {
+    def id :String = "test"
+    def includeRoot (scope :String) = scope == "test" || scope == "runtime"
+    def includeTrans (scope :String) = scope == "compile" || scope == "runtime"
+  }
+
+  /** Includes all runtime root depends, and compile and runtime transitive depends. */
+  case object Runtime extends Scope {
+    def id :String = "runtime"
+    def includeRoot (scope :String) = scope == "runtime"
+    def includeTrans (scope :String) = scope == "compile" || scope == "runtime"
+  }
 }
