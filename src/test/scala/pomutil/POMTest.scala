@@ -117,6 +117,9 @@ class POMTest
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-source-plugin</artifactId>
+            <configuration>
+              <foo>bar</foo>
+            </configuration>
             <executions>
               <execution>
                 <id>attach-sources</id>
@@ -204,6 +207,12 @@ class POMTest
     assertEquals("tests", pom.buildProps("testSourceDirectory"))
     assertEquals(Seq(Resource("rsrcs", false, Seq("foo*"), Seq("bar*"))), pom.resources)
     assertEquals(Seq(Resource("tests")), pom.testResources)
+  }
+
+  @Test def testPlugins () {
+    val pom = fromXML(buildPropped, None).get
+    assertEquals(1, pom.plugins.size)
+    assertEquals("bar", (pom.plugins.head.config \ "foo").text.trim)
   }
 
   @Test def testTransDeps () {

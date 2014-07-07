@@ -8,7 +8,7 @@ import java.io.File
 import java.util.regex.{Pattern, Matcher}
 
 import scala.collection.mutable.{ArrayBuffer, Set => MSet}
-import scala.xml.{XML, Node}
+import scala.xml.{XML, Node, NodeSeq}
 
 /**
   * Project metadata.
@@ -59,6 +59,10 @@ class POM (
     (elem \ "dependencyManagement" \ "dependencies" \ "dependency") map(
       Dependency.fromXML(subProps)) map(d => (d.mgmtKey, d)) toMap
 
+  lazy val plugins :Seq[Plugin] = (elem \ "build" \ "plugins" \\ "plugin") map(toPlugin)
+  lazy val pluginMgmt :Seq[Plugin] =
+    (elem \ "build" \ "pluginManagement" \ "plugins" \\ "plugin") map(toPlugin)
+
   /** Returns the depends in this POM and any depends inherited from its parents. */
   def fullDepends :Seq[Dependency] = parent.map(_.fullDepends).getOrElse(Seq()) ++ depends
 
@@ -83,6 +87,18 @@ class POM (
 
   /** Returns all dependencies defined in the main POM and in all profiles. */
   def allDepends :Seq[Dependency] = (depends ++ profiles.flatMap(_.depends)).distinct
+
+  /** Returns info on the specified plugin. A list of descriptor objects will be returned, starting
+    * from the root-most POM and proceding to this POM. Info from the `<pluginManagement>` section
+    * will be included for all POMs in the parent chain, and info from the `<plugins>` section will
+    * only be included for this POM.
+    */
+  def plugin (groupId :String, artifactId :String) :Seq[Plugin] =
+    pluginMgmt(groupId, artifactId) ++ plugins.find(
+      p => p.groupId == groupId && p.artifactId == p.artifactId)
+  private def pluginMgmt (groupId :String, artifactId :String) :Seq[Plugin] =
+    parent.map(_.pluginMgmt(groupId, artifactId)) getOrElse(Seq()) ++ pluginMgmt.find(
+      p => p.groupId == groupId && p.artifactId == p.artifactId)
 
   /** Returns the file for the top-most POM in the multimodule project of which this POM is a part.
     * This will return `None` if the POM was loaded from the .m2 repository. If this POM is not
@@ -166,6 +182,12 @@ class POM (
     (elem \ "excludes" \\ "exclude") map(_.text.trim),
     attr(elem, "targetPath"))
 
+  private def toPlugin (elem :Node) = Plugin(
+    attr(elem, "groupId") getOrElse(""),
+    attr(elem, "artifactId") getOrElse(""),
+    attr(elem, "version") getOrElse(""),
+    elem \ "configuration")
+
   // replaces any depends with "canonical" version from depmgmt section
   private def manageDepends (depends :Seq[Dependency]) :Seq[Dependency] = {
     val managed = depends map(d => dependMgmt.get(d.mgmtKey) match {
@@ -196,6 +218,9 @@ object POM {
     val excludes   :Seq[String] = Seq(),
     val targetPath :Option[String] = None
   )
+
+  /** Models the contents of a `<plugin>` group. */
+  case class Plugin (groupId :String, artifactId :String, version :String, config :NodeSeq)
 
   /** Parses the POM in the specified file. */
   def fromFile (file :File) :Option[POM] = fromXML(XML.loadFile(file), Some(file.getAbsoluteFile))
