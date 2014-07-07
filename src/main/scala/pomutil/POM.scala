@@ -94,11 +94,10 @@ class POM (
     * only be included for this POM.
     */
   def plugin (groupId :String, artifactId :String) :Seq[Plugin] =
-    pluginMgmt(groupId, artifactId) ++ plugins.find(
-      p => p.groupId == groupId && p.artifactId == p.artifactId)
+    pluginMgmt(groupId, artifactId) ++ plugins.find(_.matches(groupId, artifactId))
   private def pluginMgmt (groupId :String, artifactId :String) :Seq[Plugin] =
-    parent.map(_.pluginMgmt(groupId, artifactId)) getOrElse(Seq()) ++ pluginMgmt.find(
-      p => p.groupId == groupId && p.artifactId == p.artifactId)
+    parent.toSeq.flatMap(_.pluginMgmt(groupId, artifactId)) ++ pluginMgmt.find(
+      _.matches(groupId, artifactId))
 
   /** Returns the file for the top-most POM in the multimodule project of which this POM is a part.
     * This will return `None` if the POM was loaded from the .m2 repository. If this POM is not
@@ -221,6 +220,9 @@ object POM {
 
   /** Models the contents of a `<plugin>` group. */
   case class Plugin (groupId :String, artifactId :String, version :String, config :NodeSeq) {
+    /** Returns true if this plugin matches the specified group and artifact id. */
+    def matches (g :String, a :String) = groupId == g && artifactId == a
+
     /** Returns the value for the config element named `name`, if any. */
     def configValue (name :String) :Option[String] = (config \ name).headOption map(_.text.trim)
 
