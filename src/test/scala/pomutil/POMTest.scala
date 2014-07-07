@@ -119,6 +119,7 @@ class POMTest
             <artifactId>maven-source-plugin</artifactId>
             <configuration>
               <foo>bar</foo>
+              <bars><bar>baz</bar><bar>bing</bar></bars>
             </configuration>
             <executions>
               <execution>
@@ -212,7 +213,11 @@ class POMTest
   @Test def testPlugins () {
     val pom = fromXML(buildPropped, None).get
     assertEquals(1, pom.plugins.size)
-    assertEquals("bar", (pom.plugins.head.config \ "foo").text.trim)
+    assertEquals(Some("bar"), pom.plugins.head.configValue("foo"))
+    assertEquals(Seq("baz", "bing"), pom.plugins.head.configList("bars", "bar"))
+    assertEquals(None, pom.plugins.head.configValue("potato"))
+    assertEquals(Seq(), pom.plugins.head.configList("bars", "bangs"))
+    assertEquals(Seq(), pom.plugins.head.configList("bingle", "bangle"))
   }
 
   @Test def testTransDeps () {

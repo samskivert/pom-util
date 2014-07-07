@@ -220,7 +220,18 @@ object POM {
   )
 
   /** Models the contents of a `<plugin>` group. */
-  case class Plugin (groupId :String, artifactId :String, version :String, config :NodeSeq)
+  case class Plugin (groupId :String, artifactId :String, version :String, config :NodeSeq) {
+    /** Returns the value for the config element named `name`, if any. */
+    def configValue (name :String) :Option[String] = (config \ name).headOption map(_.text.trim)
+
+    /** Returns the values for the list config element named `name`, with list element name
+      * `elemName`. For example:
+      * `<foos><foo>a</foo><foo>b</foo></foos>`
+      * has name `foos` and element name `foo`.
+      */
+    def configList (name :String, elemName :String) :Seq[String] =
+      (config \ name \\ elemName) map(_.text.trim)
+  }
 
   /** Parses the POM in the specified file. */
   def fromFile (file :File) :Option[POM] = fromXML(XML.loadFile(file), Some(file.getAbsoluteFile))
