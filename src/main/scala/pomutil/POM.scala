@@ -282,7 +282,6 @@ object POM {
   private def localParent (file :Option[File], parentDep :Option[Dependency]) = for {
     pdep <- parentDep
     parentFile <- file
-    if (parentFile.exists)
     pom <- fromFile(parentFile)
     if (pom.toDependency() == pdep)
   } yield pom
