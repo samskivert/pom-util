@@ -235,8 +235,11 @@ object POM {
       (config \ name \\ elemName) map(_.text.trim)
   }
 
-  /** Parses the POM in the specified file. */
-  def fromFile (file :File) :Option[POM] = fromXML(XML.loadFile(file), Some(file.getAbsoluteFile))
+  /** Parses the POM in the specified file.
+    * @return the POM described in `file` if it exists and contains POM XML. `None` otherwise. */
+  def fromFile (file :File) :Option[POM] =
+    if (file.exists) fromXML(XML.loadFile(file), Some(file.getAbsoluteFile))
+    else None
 
   /** Parses a POM from the supplied XML. */
   def fromXML (node :Node, file :Option[File]) :Option[POM] = node match {
