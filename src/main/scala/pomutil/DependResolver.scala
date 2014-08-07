@@ -41,7 +41,7 @@ class DependResolver (pom :POM) {
     def extract (deps :Seq[Dependency], mapper :(Dependency => Dependency)) {
       haveDeps ++= (deps map key)
       allDeps ++= deps
-      val newdeps = for {
+      val newDeps = for {
         dep <- deps
         // if we have a local version of depend, use it, otherwise get it from ~/.m2/repository
         pom <- (localDep(dep) orElse dep.localPOM.flatMap(POM.fromFile)).toSeq
@@ -49,7 +49,7 @@ class DependResolver (pom :POM) {
         if (scope.includeTrans(dd.scope) && !dd.optional && !haveDeps(key(dd)))
       } yield mapper(dd)
       // we might encounter the same dep from two parents, so we .distinct to consolidate
-      if (!newdeps.isEmpty) extract(newdeps.distinct, mapper)
+      if (!newDeps.isEmpty) extract(distinctBy(newDeps)(key(_)), mapper)
     }
 
     extract(rootDepends(Compile), d => d)
@@ -81,6 +81,12 @@ class DependResolver (pom :POM) {
     * that depend on it, instead of using whatever was most recently installed into `~/.m2`.
     */
   protected def localDep (dep :Dependency) :Option[POM] = sibDeps.get(dep.id)
+
+  private def distinctBy[V,K] (vs :Seq[V])(toK :V => K) :Seq[V] = {
+    val dvs = Seq.newBuilder[V] ; val seen = MSet[K]()
+    vs foreach { v => if (seen.add(toK(v))) dvs += v }
+    dvs.result
+  }
 }
 
 object DependResolver {
