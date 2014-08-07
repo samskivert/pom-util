@@ -37,9 +37,9 @@
   </developers>
 
   <scm>
-    <connection>scm:git:git://github.com/samskivert/pom-util.git</connection>
-    <developerConnection>scm:git:git@github.com:samskivert/pom-util.git</developerConnection>
-    <url>http://github.com/samskivert/pom-util/</url>
+    <connection>scm:git:https://github.com/samskivert/pom-util.git</connection>
+    <developerConnection>scm:git:https://github.com/samskivert/pom-util.git</developerConnection>
+    <url>https://github.com/samskivert/pom-util/</url>
   </scm>
 
   <properties>
