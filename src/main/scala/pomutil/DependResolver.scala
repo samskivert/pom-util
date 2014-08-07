@@ -48,8 +48,11 @@ class DependResolver (pom :POM) {
         dd <- pom.depends filterNot(d => dep.exclusions((d.groupId, d.artifactId)))
         if (scope.includeTrans(dd.scope) && !dd.optional && !haveDeps(key(dd)))
       } yield mapper(dd)
-      // we might encounter the same dep from two parents, so we .distinct to consolidate
-      if (!newDeps.isEmpty) extract(distinctBy(newDeps)(key(_)), mapper)
+      if (!newDeps.isEmpty) {
+        // we might encounter the same dep from two parents; filter out duplicates after the first
+        val seen = MSet[(String,String)]()
+        extract(newDeps.filter(d => seen.add(key(d))), mapper)
+      }
     }
 
     extract(rootDepends(Compile), d => d)
@@ -81,12 +84,6 @@ class DependResolver (pom :POM) {
     * that depend on it, instead of using whatever was most recently installed into `~/.m2`.
     */
   protected def localDep (dep :Dependency) :Option[POM] = sibDeps.get(dep.id)
-
-  private def distinctBy[V,K] (vs :Seq[V])(toK :V => K) :Seq[V] = {
-    val dvs = Seq.newBuilder[V] ; val seen = MSet[K]()
-    vs foreach { v => if (seen.add(toK(v))) dvs += v }
-    dvs.result
-  }
 }
 
 object DependResolver {
