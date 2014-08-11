@@ -193,6 +193,14 @@ class POMTest
     assertEquals(SCM(None, None, None), pom.scm)
   }
 
+  @Test def testBogusRelativePath () {
+    val spiceParent = Dependency("org.sonatype.spice", "spice-parent", "17", "pom")
+    val pom = spiceParent.localPOM.flatMap(fromFile) match {
+      case Some(pom) => assertTrue("spice-parent resolvable", pom.parent.isDefined)
+      case None => // no spice, skip it
+    }
+  }
+
   @Test def testProfiles () {
     val pom = fromXML(profiled, None).get
     assertEquals(pom.profiles.map(_.id), Seq("java", "android"))

@@ -237,9 +237,12 @@ object POM {
 
   /** Parses the POM in the specified file.
     * @return the POM described in `file` if it exists and contains POM XML. `None` otherwise. */
-  def fromFile (file :File) :Option[POM] =
-    if (file.exists) fromXML(XML.loadFile(file), Some(file.getAbsoluteFile))
+  def fromFile (file :File) :Option[POM] = try {
+    if (file.exists && !file.isDirectory) fromXML(XML.loadFile(file), Some(file.getAbsoluteFile))
     else None
+  } catch {
+    case e :Throwable => warn(s"fromFile($file) failed: $e") ; None
+  }
 
   /** Parses a POM from the supplied XML. */
   def fromXML (node :Node, file :Option[File]) :Option[POM] = node match {
@@ -249,12 +252,7 @@ object POM {
       val parentPath = (elem \ "parent" \ "relativePath").headOption map(_.text.trim) getOrElse(
         path("..", "pom.xml"))
       val parentFile = file map(f => new File(f.getParentFile, parentPath).getCanonicalFile)
-      val parent = try {
-        localParent(parentFile, parentDep) orElse installedParent(parentDep)
-      } catch {
-        case e :Throwable =>
-          warn("Failed to read parent pom (" + parentDep + "): " + e.getMessage) ; None
-      }
+      val parent = localParent(parentFile, parentDep) orElse installedParent(parentDep)
       // if we have a parent dep but were unable to find the parent POM, issue a warning
       if (parentDep.isDefined && !parent.isDefined) {
         warn(text(elem, "artifactId").getOrElse("unknown") + " missing parent: " + parentDep.get.id)
