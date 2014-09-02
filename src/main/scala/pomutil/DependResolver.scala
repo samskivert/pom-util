@@ -28,9 +28,10 @@ class DependResolver (pom :POM) {
     * dependencies are resolved per the specified scope.
     */
   def resolve (scope :Scope = Compile) :Seq[Dependency] = {
-    val haveDeps = MSet[(String,String)]()
+    type DepKey = (String,String,Option[String])
+    val haveDeps = MSet[DepKey]()
     val allDeps = ArrayBuffer[Dependency]()
-    def key (d :Dependency) = (d.groupId, d.artifactId)
+    def key (d :Dependency) = (d.groupId, d.artifactId, d.classifier)
 
     // we expand our dependency tree one "layer" at a time; we start with the depends at distance
     // one from the project (its direct dependencies), then we compute all of the direct
@@ -50,7 +51,7 @@ class DependResolver (pom :POM) {
       } yield mapper(dd)
       if (!newDeps.isEmpty) {
         // we might encounter the same dep from two parents; filter out duplicates after the first
-        val seen = MSet[(String,String)]()
+        val seen = MSet[DepKey]()
         extract(newDeps.filter(d => seen.add(key(d))), mapper)
       }
     }
