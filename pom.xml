@@ -43,7 +43,7 @@
   </scm>
 
   <properties>
-    <scala.version>2.11.0</scala.version>
+    <scala.version>2.11.3</scala.version>
     <scala.major.version>2.11</scala.major.version>
   </properties>
 
