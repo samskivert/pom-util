@@ -273,7 +273,9 @@ object POM {
     }
   }
 
-  private val knownBuildProps = Set("sourceDirectory", "testSourceDirectory")
+  private val knownBuildProps = Set("directory", "finalName",
+                                    "sourceDirectory", "testSourceDirectory",
+                                    "outputDirectory", "testOutputDirectory")
 
   private def path (comps :String*) = (comps.head /: comps.tail)(_ + File.separator + _)
 
