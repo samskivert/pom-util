@@ -45,6 +45,7 @@
   <properties>
     <scala.version>2.11.4</scala.version>
     <scala.major.version>2.11</scala.major.version>
+    <scala.maven.version>3.2.0</scala.maven.version>
   </properties>
 
   <dependencies>
@@ -71,23 +72,16 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.scala-tools</groupId>
-        <artifactId>maven-scala-plugin</artifactId>
-        <version>2.15.2</version>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>${scala.maven.version}</version>
         <executions>
           <execution>
-            <id>compile</id>
-            <goals><goal>compile</goal></goals>
-            <phase>compile</phase>
-          </execution>
-          <execution>
-            <id>test-compile</id>
-            <goals><goal>testCompile</goal></goals>
-            <phase>test-compile</phase>
-          </execution>
-          <execution>
-            <phase>process-resources</phase>
-            <goals><goal>compile</goal></goals>
+            <goals>
+              <goal>compile</goal>
+              <goal>testCompile</goal>
+              <goal>doc-jar</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
