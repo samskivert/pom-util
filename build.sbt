@@ -4,11 +4,11 @@ name := "pom-util"
 
 version := "0.7-SNAPSHOT"
 
-scalaVersion := "2.11.0"
+scalaVersion := "2.11.5"
 
 crossPaths := false
 
-scalacOptions ++= Seq("-unchecked", "-deprecation")
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
 
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % "1.0.1",
