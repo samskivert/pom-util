@@ -7,6 +7,7 @@ package pomutil
 import java.io.File
 import java.util.regex.{Pattern, Matcher}
 
+import scala.language.postfixOps
 import scala.collection.mutable.{ArrayBuffer, Set => MSet}
 import scala.xml.{XML, Node, NodeSeq}
 
@@ -103,7 +104,7 @@ class POM (
     * This will return `None` if the POM was loaded from the .m2 repository. If this POM is not
     * part of a multimodule project (but was not loaded from the .m2 repository), it will return
     * itself as the top-most POM. */
-  def rootPOM :Option[File] = parent flatMap(_ rootPOM) orElse (file match {
+  def rootPOM :Option[File] = parent flatMap(_.rootPOM) orElse (file match {
     case Some(f) if (!Dependency.isRepoFile(f)) => file
     case _ => None
   })

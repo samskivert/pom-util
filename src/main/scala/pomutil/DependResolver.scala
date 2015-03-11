@@ -65,7 +65,7 @@ class DependResolver (pom :POM) {
     allDeps.toSeq
   }
 
-  @deprecated("Use new resolve(Scope)")
+  @deprecated("Use new resolve(Scope)", "0.7")
   def resolve (forTest :Boolean) :Seq[Dependency] = resolve(if (forTest) Compile else Test)
 
   /** Returns the root depends from which the transitive depends are expanded. By default this is
