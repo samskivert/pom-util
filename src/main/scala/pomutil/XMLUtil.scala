@@ -27,5 +27,5 @@ object XMLUtil {
 
   /** Obtains the text of the (first instance of the) specified child of the supplied node, if it
     * exists. Trims whitespace along the way. */
-  def text (node :NodeSeq, child :String) :Option[String] = text(node).headOption
+  def text (node :NodeSeq, child :String) :Option[String] = text(node \ child).headOption
 }
