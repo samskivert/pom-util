@@ -21,6 +21,7 @@ class POM (
   elem :Node
 ) {
   import POM._
+  import XMLUtil._
 
   lazy val modelVersion :String = attr("modelVersion") getOrElse("4.0.0")
 
@@ -49,7 +50,7 @@ class POM (
     if (rs.isEmpty) Seq(Resource(path("src", "test", "resources"))) else rs
   }
 
-  lazy val modules    :Seq[String]  = (elem \ "modules" \\ "module") map(_.text.trim)
+  lazy val modules    :Seq[String]  = text(elem \ "modules" \\ "module")
   lazy val profiles   :Seq[Profile] = (elem \ "profiles" \\ "profile") map(new Profile(this, _))
   lazy val properties :Map[String,String] =
     (elem \ "properties" \ "_") map(n => (n.label.trim, n.text.trim)) toMap
@@ -129,7 +130,7 @@ class POM (
   def isSnapshot = version.endsWith("-SNAPSHOT")
 
   /** Extracts the text of an attribute from the supplied element and substitutes properties. */
-  def attr (elem :Node, name :String) :Option[String] = XMLUtil.text(elem, name) map(subProps)
+  def attr (elem :Node, name :String) :Option[String] = text(elem, name) map(subProps)
 
   @deprecated("Use DependResolver", "0.7")
   def transitiveDepends (forTest :Boolean) :Seq[Dependency] =
@@ -178,15 +179,15 @@ class POM (
   private def toResource (elem :Node) = Resource(
     attr(elem, "directory") getOrElse("resourceMissingDirectory"),
     (attr(elem, "filtering") getOrElse("false")).toBoolean,
-    (elem \ "includes" \\ "include") map(_.text.trim),
-    (elem \ "excludes" \\ "exclude") map(_.text.trim),
+    text(elem \ "includes" \\ "include"),
+    text(elem \ "excludes" \\ "exclude"),
     attr(elem, "targetPath"))
 
   private def toPlugin (elem :Node) = Plugin(
     attr(elem, "groupId") getOrElse(""),
     attr(elem, "artifactId") getOrElse(""),
     attr(elem, "version") getOrElse(""),
-    elem \ "configuration")
+    elem \ "configuration", this)
 
   // replaces any depends with "canonical" version from depmgmt section
   private def manageDepends (depends :Seq[Dependency]) :Seq[Dependency] = {
@@ -220,12 +221,12 @@ object POM {
   )
 
   /** Models the contents of a `<plugin>` group. */
-  case class Plugin (groupId :String, artifactId :String, version :String, config :NodeSeq) {
+  case class Plugin (groupId :String, artifactId :String, version :String, config :NodeSeq, pom :POM) {
     /** Returns true if this plugin matches the specified group and artifact id. */
     def matches (g :String, a :String) = groupId == g && artifactId == a
 
     /** Returns the value for the config element named `name`, if any. */
-    def configValue (name :String) :Option[String] = (config \ name).headOption map(_.text.trim)
+    def configValue (name :String) :Option[String] = text(config, name) map(pom.subProps)
 
     /** Returns the values for the list config element named `name`, with list element name
       * `elemName`. For example:
@@ -233,7 +234,7 @@ object POM {
       * has name `foos` and element name `foo`.
       */
     def configList (name :String, elemName :String) :Seq[String] =
-      (config \ name \\ elemName) map(_.text.trim)
+      text(config \ name \\ elemName) map(pom.subProps)
   }
 
   /** Parses the POM in the specified file.
@@ -250,8 +251,7 @@ object POM {
     case elem if (elem.label == "project") => {
       val parentDep = (elem \ "parent").headOption map(Dependency.fromXML) map(
         _.copy(`type` = "pom"))
-      val parentPath = (elem \ "parent" \ "relativePath").headOption map(_.text.trim) getOrElse(
-        path("..", "pom.xml"))
+      val parentPath = text(elem \ "parent", "relativePath") getOrElse(path("..", "pom.xml"))
       val parentFile = file map(f => new File(f.getParentFile, parentPath).getCanonicalFile)
       val parent = localParent(parentFile, parentDep) orElse installedParent(parentDep)
       // if we have a parent dep but were unable to find the parent POM, issue a warning
