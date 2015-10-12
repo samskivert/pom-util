@@ -10,7 +10,7 @@
   <groupId>com.samskivert</groupId>
   <artifactId>pom-util</artifactId>
   <packaging>jar</packaging>
-  <version>1.7.5</version>
+  <version>1.8-SNAPSHOT</version>
 
   <name>pom-util</name>
   <description>A library for reading Maven POM files.</description>
