@@ -71,7 +71,7 @@ class POM (
   /** Build properties like `sourceDirectory` and other simple stuff. */
   lazy val buildProps :Map[String,String] =
     (elem \ "build" \ "_") filter(n => knownBuildProps(n.label.trim)) map(
-      n => (n.label.trim, n.text.trim)) toMap // TODO: extract deeper stuffs
+      n => (n.label.trim, subProps(n.text.trim))) toMap // TODO: extract deeper stuffs
 
   /** Returns an identifier that encompases the group, artifact and version. */
   def id :String = groupId + ":" + artifactId + ":" + version
@@ -158,6 +158,7 @@ class POM (
     if (key == "basedir") file.map(_.getParentFile.getAbsolutePath)
     else if (!key.startsWith("project.")) None
     else key.substring(8) match {
+      case "basedir" => file.map(_.getParentFile.getAbsolutePath)
       case "groupId" => Some(groupId)
       case "artifactId" => Some(artifactId)
       case "version" => Some(version)
