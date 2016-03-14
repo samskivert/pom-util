@@ -149,6 +149,30 @@ class POMTest
       </build>
     </project>
 
+  val envSysPath =
+    <project>
+      <groupId>com.test</groupId>
+      <artifactId>build-propped</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <packaging>jar</packaging>
+      <dependencies>
+        <dependency>
+          <groupId>com.google.android</groupId>
+          <artifactId>android</artifactId>
+          <version>23</version>
+          <scope>system</scope>
+          <systemPath>{"${env.HOME}/foo.jar"}</systemPath>
+        </dependency>
+      </dependencies>
+    </project>
+
+  @Test def testEnvSysPath () {
+    val pom = fromXML(envSysPath, None).get
+    val foodep = pom.depends.head
+    val foopath = foodep.systemPath.get
+    assertFalse(foopath contains System.getProperty("user.dir"))
+  }
+
   @Test def testFromXML () {
     val pom = fromXML(samskivert, None).get
     assertEquals(Some(Dependency("org.sonatype.oss", "oss-parent", "7", "pom")),

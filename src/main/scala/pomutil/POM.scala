@@ -177,7 +177,7 @@ class POM (
   private def getSysPropAttr (key :String) :Option[String] = Option(System.getProperty(key))
 
   private def getEnvAttr (key :String) :Option[String] =
-    if (key startsWith "env.") Option(System.getenv(key))
+    if (key startsWith "env.") Option(System.getenv(key.drop(4)))
     else None
 
   private def toResource (elem :Node) = Resource(
