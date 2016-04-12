@@ -249,7 +249,7 @@ object POM {
     if (file.exists && !file.isDirectory) fromXML(XML.loadFile(file), Some(file.getAbsoluteFile))
     else None
   } catch {
-    case e :Throwable => warn(s"fromFile($file) failed: $e") ; None
+    case e :Throwable => warn(s"fromFile($file) failed", e) ; None
   }
 
   /** Parses a POM from the supplied XML. */
@@ -301,6 +301,10 @@ object POM {
 
   private def warn (msg :String) {
     Console.err.println("!!! " + msg)
+  }
+  private def warn (msg :String, cause :Throwable) {
+    Console.err.println("!!! " + msg)
+    cause.printStackTrace(Console.err)
   }
 
   private val PropRe = Pattern.compile("\\$\\{([^}]+)\\}")
