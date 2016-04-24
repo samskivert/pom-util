@@ -115,7 +115,7 @@ class POM (
   /** Looks up a POM attribute, which may include properties defined in the POM as well as basic
     * project attributes like `project.version`, etc. */
   def getAttr (name :String) :Option[String] =
-    getProjectAttr(name) orElse getEnvAttr(name) orElse getSysPropAttr(name) orElse getProp(name)
+    getProjectAttr(name) orElse getEnvAttr(name) orElse getSysPropAttr(name) orElse propGetter(name)
 
   /** Returns a dependency on the (optionally classified) artifact described by this POM. */
   def toDependency (classifier :Option[String] = None,
@@ -177,6 +177,15 @@ class POM (
   private def getEnvAttr (key :String) :Option[String] =
     if (key startsWith "env.") Option(System.getenv(key.drop(4)))
     else None
+
+  // hack that allows child pom to override property resolution in parents
+  private var propGetter :String => Option[String] = null
+  private def setPropGetter (getter :String => Option[String]) {
+    propGetter = getter
+    parent.map(_.setPropGetter(getter))
+  }
+  // at construct time, we set our prop getter on all of our parents
+  setPropGetter(getProp)
 
   private def getProp (name :String) :Option[String] =
     // TODO: avoid infinite loop if `properties` map contains cycles
