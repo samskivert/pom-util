@@ -115,9 +115,7 @@ class POM (
   /** Looks up a POM attribute, which may include properties defined in the POM as well as basic
     * project attributes like `project.version`, etc. */
   def getAttr (name :String) :Option[String] =
-    // TODO: avoid infinite loop if `properties` map contains cycles
-    getProjectAttr(name) orElse getEnvAttr(name) orElse getSysPropAttr(name) orElse
-      properties.get(name).map(subProps) orElse parent.flatMap(_.getAttr(name))
+    getProjectAttr(name) orElse getEnvAttr(name) orElse getSysPropAttr(name) orElse getProp(name)
 
   /** Returns a dependency on the (optionally classified) artifact described by this POM. */
   def toDependency (classifier :Option[String] = None,
@@ -179,6 +177,10 @@ class POM (
   private def getEnvAttr (key :String) :Option[String] =
     if (key startsWith "env.") Option(System.getenv(key.drop(4)))
     else None
+
+  private def getProp (name :String) :Option[String] =
+    // TODO: avoid infinite loop if `properties` map contains cycles
+    properties.get(name).map(subProps) orElse parent.flatMap(_.getProp(name))
 
   private def toResource (elem :Node) = Resource(
     attr(elem, "directory") getOrElse("resourceMissingDirectory"),
